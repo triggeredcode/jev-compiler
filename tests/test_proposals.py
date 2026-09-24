@@ -94,4 +94,45 @@ def test_teacher_proposal_cannot_change_legal_criteria() -> None:
     )
 
     with pytest.raises(ProposalError, match="preserve the exact criterion keys"):
-        asyncio.run(propose_question_rewrites(teacher, _program(), _failures()))
+        asyncio.run(
+            propose_question_rewrites(
+                teacher,
+                _program(),
+                _failures(),
+                max_attempts=1,
+            )
+        )
+
+
+def test_teacher_can_repair_an_invalid_target() -> None:
+    teacher = RecordedTeacherProvider(
+        [
+            {
+                "proposals": [
+                    {
+                        "stage_id": "route",
+                        "question_id": "route",
+                        "hypothesis": "Wrong target first.",
+                        "instructions": "Choose.",
+                        "criteria": {"billing": "Charge", "manual_review": "Other"},
+                    }
+                ]
+            },
+            {
+                "proposals": [
+                    {
+                        "stage_id": "classify",
+                        "question_id": "route",
+                        "hypothesis": "Use the exact target.",
+                        "instructions": "Choose explicit billing or review.",
+                        "criteria": {"billing": "Charge", "manual_review": "Other"},
+                    }
+                ]
+            },
+        ]
+    )
+
+    proposals = asyncio.run(propose_question_rewrites(teacher, _program(), _failures()))
+
+    assert len(proposals) == 1
+    assert len(teacher.calls) == 2

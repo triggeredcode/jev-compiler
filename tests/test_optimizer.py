@@ -285,3 +285,35 @@ def test_empty_held_out_split_is_explicitly_unavailable(tmp_path) -> None:
 
     result = asyncio.run(exercise())
     assert result.held_out is None
+
+
+def test_candidate_budget_stops_search_after_hard_ceiling(tmp_path) -> None:
+    cases = [
+        _case(1, "billing", 0.9, "billing"),
+        _case(2, "billing", 0.6, "billing"),
+    ]
+
+    async def exercise():
+        with JevCache(tmp_path / "jev.sqlite3") as cache:
+            provider = CachingSystemOneProvider(cache, ConfidenceProvider())
+            return await Optimizer(provider).optimize(
+                _program(),
+                cases,
+                thresholds=[0.1, 0.2, 0.3, 0.4, 0.5],
+                max_candidates=2,
+            )
+
+    result = asyncio.run(exercise())
+
+    assert len(result.candidates) == 2
+    assert result.search is not None
+    assert result.search.candidate_budget == 2
+    assert result.search.evaluated_candidates == 2
+    assert result.search.stop_reason == "candidate_budget"
+
+
+def test_candidate_budget_must_allow_the_baseline(tmp_path) -> None:
+    with JevCache(tmp_path / "jev.sqlite3") as cache:
+        provider = CachingSystemOneProvider(cache, ConfidenceProvider())
+        with pytest.raises(ValueError, match="max_candidates must be positive"):
+            asyncio.run(Optimizer(provider).optimize(_program(), [], max_candidates=0))

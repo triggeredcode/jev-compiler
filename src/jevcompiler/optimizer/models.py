@@ -73,6 +73,12 @@ class HeldOutEvaluation(StrictModel):
     selected_evaluation: EvaluationReport
 
 
+class SearchSummary(StrictModel):
+    candidate_budget: int | None = Field(default=None, ge=1)
+    evaluated_candidates: int = Field(ge=1)
+    stop_reason: Literal["search_exhausted", "candidate_budget"]
+
+
 class OptimizationResult(StrictModel):
     baseline_candidate_id: str
     selected_candidate_id: str
@@ -85,3 +91,4 @@ class OptimizationResult(StrictModel):
     live_calls: int = Field(ge=0)
     selection_digest: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
     held_out: HeldOutEvaluation | None = None
+    search: SearchSummary | None = None

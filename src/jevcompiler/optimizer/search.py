@@ -13,6 +13,7 @@ from jevcompiler.optimizer.models import (
     CandidateRecord,
     HeldOutEvaluation,
     OptimizationResult,
+    SearchSummary,
 )
 from jevcompiler.optimizer.mutations import (
     MutationCandidate,
@@ -133,7 +134,10 @@ class Optimizer:
         *,
         thresholds: Sequence[float] = (0.5, 0.6, 0.7, 0.8, 0.9),
         mutations: Sequence[MutationCandidate] = (),
+        max_candidates: int | None = None,
     ) -> OptimizationResult:
+        if max_candidates is not None and max_candidates < 1:
+            raise ValueError("max_candidates must be positive")
         baseline_record = await self._evaluate(
             baseline,
             cases=cases,
@@ -147,6 +151,7 @@ class Optimizer:
         records = [baseline_record]
         seen = {baseline_record.candidate_id}
         current = baseline_record
+        budget_exhausted = False
 
         for dimension in confidence_dimensions(baseline):
             local: list[CandidateRecord] = []
@@ -155,6 +160,9 @@ class Optimizer:
                 identifier = program_id(mutation.program)
                 if identifier in seen:
                     continue
+                if max_candidates is not None and len(records) >= max_candidates:
+                    budget_exhausted = True
+                    break
                 seen.add(identifier)
                 record = await self._evaluate(
                     mutation.program,
@@ -172,24 +180,30 @@ class Optimizer:
                 best = max([current, *local], key=_quality_key)
                 if _quality_key(best) > _quality_key(current):
                     current = best
+            if budget_exhausted:
+                break
 
-        for mutation in mutations:
-            identifier = program_id(mutation.program)
-            if identifier in seen:
-                continue
-            seen.add(identifier)
-            records.append(
-                await self._evaluate(
-                    mutation.program,
-                    cases=cases,
-                    parent_id=mutation.parent_id or baseline_record.candidate_id,
-                    generation=1,
-                    mutation_type=mutation.mutation_type,
-                    hypothesis=mutation.hypothesis,
-                    semantic_diff=mutation.semantic_diff,
-                    status="rejected",
+        if not budget_exhausted:
+            for mutation in mutations:
+                identifier = program_id(mutation.program)
+                if identifier in seen:
+                    continue
+                if max_candidates is not None and len(records) >= max_candidates:
+                    budget_exhausted = True
+                    break
+                seen.add(identifier)
+                records.append(
+                    await self._evaluate(
+                        mutation.program,
+                        cases=cases,
+                        parent_id=mutation.parent_id or baseline_record.candidate_id,
+                        generation=1,
+                        mutation_type=mutation.mutation_type,
+                        hypothesis=mutation.hypothesis,
+                        semantic_diff=mutation.semantic_diff,
+                        status="rejected",
+                    )
                 )
-            )
 
         frontier = pareto_frontier(records)
         eligible = [record for record in records if record.candidate_id in frontier]
@@ -226,6 +240,13 @@ class Optimizer:
             live_calls=stats.live_calls if stats else 0,
             selection_digest=content_digest(
                 [case.model_dump(mode="json") for case in cases]
+            ),
+            search=SearchSummary(
+                candidate_budget=max_candidates,
+                evaluated_candidates=len(records),
+                stop_reason=(
+                    "candidate_budget" if budget_exhausted else "search_exhausted"
+                ),
             ),
         )
 

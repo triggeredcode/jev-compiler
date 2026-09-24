@@ -126,3 +126,20 @@ def test_dataset_rejects_illegal_teacher_action() -> None:
                 counterfactual=0,
             )
         )
+
+
+def test_dataset_rejects_an_undersized_generated_batch() -> None:
+    teacher = RecordedTeacherProvider(
+        [{"cases": [{"state": {"body": "one"}, "summary": "only one"}]}]
+    )
+
+    with pytest.raises(DatasetBuildError, match="exactly 2 cases"):
+        asyncio.run(
+            DatasetBuilder(teacher).build(
+                _task().model_copy(update={"examples": []}),
+                normal=2,
+                boundary=0,
+                edge=0,
+                counterfactual=0,
+            )
+        )

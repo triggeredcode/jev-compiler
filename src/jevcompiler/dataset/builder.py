@@ -8,7 +8,9 @@ import json
 from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
+
+from pydantic import Field, ValidationError, create_model
 
 from jevcompiler.dataset.models import (
     CaseBucket,
@@ -19,6 +21,7 @@ from jevcompiler.dataset.models import (
     LabelBatch,
     LabelMetadata,
     ScenarioBatch,
+    ScenarioDraft,
 )
 from jevcompiler.providers.teacher import StructuredGeneration, TeacherProvider
 from jevcompiler.specs.task import TaskSpec
@@ -39,6 +42,18 @@ def _case_id(state: dict[str, Any]) -> str:
 def _corpus_hash(cases: list[DatasetCase]) -> str:
     ordered = sorted((case.model_dump(mode="json") for case in cases), key=lambda item: item["id"])
     return hashlib.sha256(_canonical_json(ordered).encode()).hexdigest()
+
+
+def _scenario_batch_schema(count: int) -> type[ScenarioBatch]:
+    """Create a per-request schema that cannot silently underproduce cases."""
+    return cast(
+        type[ScenarioBatch],
+        create_model(
+            f"ScenarioBatch{count}",
+            __base__=ScenarioBatch,
+            cases=(list[ScenarioDraft], Field(min_length=count, max_length=count)),
+        ),
+    )
 
 
 def _split_cases(
@@ -139,26 +154,32 @@ class DatasetBuilder:
     async def _generate_bucket(
         self, task: TaskSpec, bucket: str, count: int, seed: int
     ) -> list[_UnlabeledCase]:
-        generation = await self.teacher.structured_generate(
-            [
-                {
-                    "role": "system",
-                    "content": (
-                        "You generate evaluation states for a bounded decision policy. Return only "
-                        "the requested states. Do not label them or reveal the expected action."
-                    ),
-                },
-                {
-                    "role": "user",
-                    "content": (
-                        f"Generate exactly {count} distinct {bucket} cases using seed {seed}. "
-                        f"TaskSpec:\n{task.model_dump_json(by_alias=True, exclude_none=True)}"
-                    ),
-                },
-            ],
-            ScenarioBatch,
-            temperature=0.4,
-        )
+        try:
+            generation = await self.teacher.structured_generate(
+                [
+                    {
+                        "role": "system",
+                        "content": (
+                            "You generate evaluation states for a bounded decision policy. Return "
+                            "only the requested states. Do not label them or reveal the expected "
+                            "action."
+                        ),
+                    },
+                    {
+                        "role": "user",
+                        "content": (
+                            f"Generate exactly {count} distinct {bucket} cases using seed {seed}. "
+                            f"TaskSpec:\n{task.model_dump_json(by_alias=True, exclude_none=True)}"
+                        ),
+                    },
+                ],
+                _scenario_batch_schema(count),
+                temperature=0.4,
+            )
+        except ValidationError:
+            raise DatasetBuildError(
+                f"{bucket} generator must return exactly {count} cases"
+            ) from None
         return self._materialize_generation(generation, bucket, seed)
 
     async def _generate_counterfactuals(
@@ -174,28 +195,33 @@ class DatasetBuilder:
             {"id": case.id, "state": case.state, "summary": case.summary}
             for case in parents[: max(count, 1)]
         ]
-        generation = await self.teacher.structured_generate(
-            [
-                {
-                    "role": "system",
-                    "content": (
-                        "Generate counterfactual evaluation states. Change exactly one "
-                        "policy-relevant factor from a supplied parent and set parent_id to that "
-                        "parent's id. Do not label."
-                    ),
-                },
-                {
-                    "role": "user",
-                    "content": (
-                        f"Generate exactly {count} counterfactuals using seed {seed}. "
-                        f"TaskSpec:\n{task.model_dump_json(by_alias=True, exclude_none=True)}\n"
-                        f"Parents:\n{_canonical_json(parent_payload)}"
-                    ),
-                },
-            ],
-            ScenarioBatch,
-            temperature=0.3,
-        )
+        try:
+            generation = await self.teacher.structured_generate(
+                [
+                    {
+                        "role": "system",
+                        "content": (
+                            "Generate counterfactual evaluation states. Change exactly one "
+                            "policy-relevant factor from a supplied parent and set parent_id to "
+                            "that parent's id. Do not label."
+                        ),
+                    },
+                    {
+                        "role": "user",
+                        "content": (
+                            f"Generate exactly {count} counterfactuals using seed {seed}. "
+                            f"TaskSpec:\n{task.model_dump_json(by_alias=True, exclude_none=True)}\n"
+                            f"Parents:\n{_canonical_json(parent_payload)}"
+                        ),
+                    },
+                ],
+                _scenario_batch_schema(count),
+                temperature=0.3,
+            )
+        except ValidationError:
+            raise DatasetBuildError(
+                f"counterfactual generator must return exactly {count} cases"
+            ) from None
         materialized = self._materialize_generation(generation, "counterfactual", seed)
         parent_ids = {case.id for case in parents}
         if any(case.parent_id not in parent_ids for case in materialized):

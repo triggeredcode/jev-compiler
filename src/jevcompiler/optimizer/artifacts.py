@@ -47,5 +47,10 @@ def write_optimization(result: OptimizationResult, output: Path) -> None:
             selected.evaluation.model_dump_json(indent=2),
             encoding="utf-8",
         )
+    if result.held_out is not None:
+        (output / "held-out.json").write_text(
+            result.held_out.model_dump_json(indent=2),
+            encoding="utf-8",
+        )
     write_failure_corpus(result.baseline_failures, output / "baseline-failures")
     write_failure_corpus(result.selected_failures, output / "selected-failures")

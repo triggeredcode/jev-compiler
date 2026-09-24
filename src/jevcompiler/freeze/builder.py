@@ -123,6 +123,7 @@ def freeze_optimization(
             "held_out_digest": (
                 result.held_out.digest if result.held_out is not None else None
             ),
+            "search": result.search.model_dump(mode="json") if result.search else None,
             "cache": {
                 "hits": result.cache_hits,
                 "misses": result.cache_misses,

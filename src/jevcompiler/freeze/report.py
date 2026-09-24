@@ -69,6 +69,12 @@ def render_report(result: OptimizationResult) -> str:
         held_out_note = (
             f"Measured on {result.held_out.selected_evaluation.total} untouched test cases."
         )
+    search_note = (
+        f"Search stopped after {result.search.evaluated_candidates} candidates "
+        f"because of {result.search.stop_reason.replace('_', ' ')}."
+        if result.search is not None
+        else "Search termination metadata was unavailable."
+    )
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -100,6 +106,7 @@ def render_report(result: OptimizationResult) -> str:
     Selected <code>{escape(selected.candidate_id)}</code>
     from {len(result.candidates)} measured candidates.
   </p>
+  <p>{escape(search_note)}</p>
   <section class="summary">
     <div class="card"><strong>{_metric(selected, 'accuracy')}</strong>accuracy</div>
     <div class="card"><strong>{_metric(selected, 'macro_f1')}</strong>macro F1</div>

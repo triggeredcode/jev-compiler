@@ -73,3 +73,4 @@ def test_build_command_exposes_budgets_and_resume() -> None:
     assert BUDGETS[BuildBudget.quick].semantic is False
     assert BUDGETS[BuildBudget.standard].semantic is True
     assert BUDGETS[BuildBudget.quick].max_live_calls < BUDGETS[BuildBudget.deep].max_live_calls
+    assert BUDGETS[BuildBudget.quick].max_candidates < BUDGETS[BuildBudget.deep].max_candidates

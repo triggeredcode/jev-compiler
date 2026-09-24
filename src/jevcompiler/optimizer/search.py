@@ -70,7 +70,7 @@ def candidate_metrics(
     )
 
 
-def _quality_key(record: CandidateRecord) -> tuple[float, float, int, int, int, str]:
+def _quality_key(record: CandidateRecord) -> tuple[float, float, int, int, int, int, str]:
     assert record.metrics is not None
     return (
         record.metrics.accuracy,
@@ -78,6 +78,7 @@ def _quality_key(record: CandidateRecord) -> tuple[float, float, int, int, int, 
         -record.metrics.jev_calls,
         -record.metrics.question_tokens,
         -record.metrics.graph_complexity,
+        -record.generation,
         record.candidate_id,
     )
 

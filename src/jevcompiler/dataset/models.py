@@ -5,7 +5,14 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-CaseBucket = Literal["normal", "boundary", "counterfactual", "edge", "user"]
+CaseBucket = Literal[
+    "normal",
+    "boundary",
+    "counterfactual",
+    "semantic_variation",
+    "edge",
+    "user",
+]
 
 
 class StrictModel(BaseModel):
@@ -81,4 +88,3 @@ class DatasetBundle(StrictModel):
     @property
     def all_cases(self) -> list[DatasetCase]:
         return [*self.train, *self.dev, *self.test]
-

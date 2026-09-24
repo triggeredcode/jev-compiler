@@ -118,6 +118,7 @@ class DatasetBuilder:
         boundary: int = 4,
         edge: int = 4,
         counterfactual: int = 4,
+        semantic_variation: int = 0,
         seed: int = 42,
     ) -> DatasetBundle:
         counts = {"normal": normal, "boundary": boundary, "edge": edge}
@@ -141,6 +142,23 @@ class DatasetBuilder:
 
         labeled = await self._label(task, unlabeled)
         train, dev, test = _split_cases(labeled, seed)
+        if semantic_variation > 0:
+            semantic_variations = await self._generate_semantic_variations(
+                task,
+                labeled,
+                semantic_variation,
+                seed,
+            )
+            semantic_variations = await self._label(task, semantic_variations)
+            self._validate_semantic_variations(labeled, semantic_variations)
+            split_by_case_id = {
+                case.id: split
+                for split, cases in ((train, train), (dev, dev), (test, test))
+                for case in cases
+            }
+            for variation in semantic_variations:
+                split_by_case_id[variation.parent_id].append(variation)  # type: ignore[index]
+            labeled = [*labeled, *semantic_variations]
         buckets = Counter(case.bucket for case in labeled)
         manifest = DatasetManifest(
             task_name=task.name,
@@ -229,6 +247,71 @@ class DatasetBuilder:
                 "counterfactual response contains an unknown or missing parent_id"
             )
         return materialized
+
+    async def _generate_semantic_variations(
+        self,
+        task: TaskSpec,
+        parents: list[DatasetCase],
+        count: int,
+        seed: int,
+    ) -> list[_UnlabeledCase]:
+        if not parents:
+            return []
+        parent_payload = [
+            {"id": case.id, "state": case.state, "summary": case.summary}
+            for case in parents[: max(count, 1)]
+        ]
+        try:
+            generation = await self.teacher.structured_generate(
+                [
+                    {
+                        "role": "system",
+                        "content": (
+                            "Generate semantics-preserving variations of supplied evaluation "
+                            "states. "
+                            "Rephrase surface text without changing policy-relevant meaning or the "
+                            "expected decision. Set parent_id to the source case id. Do not label."
+                        ),
+                    },
+                    {
+                        "role": "user",
+                        "content": (
+                            f"Generate exactly {count} semantic variations using seed {seed}. "
+                            f"TaskSpec:\n{task.model_dump_json(by_alias=True, exclude_none=True)}\n"
+                            f"Parents:\n{_canonical_json(parent_payload)}"
+                        ),
+                    },
+                ],
+                _scenario_batch_schema(count),
+                temperature=0.3,
+            )
+        except ValidationError:
+            raise DatasetBuildError(
+                f"semantic variation generator must return exactly {count} cases"
+            ) from None
+        materialized = self._materialize_generation(generation, "semantic_variation", seed)
+        parent_ids = {case.id for case in parents}
+        if any(case.parent_id not in parent_ids for case in materialized):
+            raise DatasetBuildError(
+                "semantic variation response contains an unknown or missing parent_id"
+            )
+        return materialized
+
+    @staticmethod
+    def _validate_semantic_variations(
+        parents: list[DatasetCase],
+        variations: list[DatasetCase],
+    ) -> None:
+        expected_by_id = {case.id: case.expected_action for case in parents}
+        changed = [
+            case.id
+            for case in variations
+            if expected_by_id.get(case.parent_id) != case.expected_action
+        ]
+        if changed:
+            raise DatasetBuildError(
+                "semantic variations changed the expected action: " + ", ".join(sorted(changed))
+            )
 
     @staticmethod
     def _materialize_generation(

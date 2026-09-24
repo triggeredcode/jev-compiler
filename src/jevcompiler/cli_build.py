@@ -66,9 +66,10 @@ BUDGETS = {
 }
 
 
-def _selection_digest(dataset_path: Path) -> str:
+def _split_digest(dataset_path: Path, split: str) -> str:
     dataset = read_dataset(dataset_path)
-    return content_digest([case.model_dump(mode="json") for case in dataset.dev])
+    cases = getattr(dataset, split)
+    return content_digest([case.model_dump(mode="json") for case in cases])
 
 
 async def _build_all(
@@ -136,7 +137,14 @@ async def _build_all(
         )
         if (
             optimization.baseline_candidate_id != program_id(baseline.program)
-            or optimization.selection_digest != _selection_digest(dataset_dir)
+            or optimization.selection_digest != _split_digest(dataset_dir, "dev")
+            or (
+                bool(dataset.test)
+                and (
+                    optimization.held_out is None
+                    or optimization.held_out.digest != _split_digest(dataset_dir, "test")
+                )
+            )
         ):
             optimization = None
     if optimization is None:

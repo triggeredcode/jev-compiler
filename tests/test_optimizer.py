@@ -250,6 +250,10 @@ def test_held_out_evaluation_preserves_selection_and_compares_baseline(tmp_path)
     assert result.held_out.baseline_evaluation.total == 2
     assert result.held_out.selected_evaluation.total == 2
 
+    output = tmp_path / "optimization"
+    write_optimization(result, output)
+    assert (output / "held-out.json").exists()
+
 
 def test_held_out_evaluation_does_not_duplicate_identical_program(tmp_path) -> None:
     case = _case(1, "billing", 0.95, "billing")

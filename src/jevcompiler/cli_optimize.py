@@ -67,30 +67,30 @@ async def _optimize_with_provider(
     cases = getattr(dataset, split.value)
     optimizer = Optimizer(provider, concurrency=concurrency)
     result = await optimizer.optimize(program, cases, thresholds=thresholds)
-    if not semantic:
-        return result
-    if task_path is None:
-        raise ValueError("--semantic requires --task")
+    if semantic:
+        if task_path is None:
+            raise ValueError("--semantic requires --task")
 
-    task = load_task(task_path)
-    if task.name != program.name:
-        raise ValueError(f"task {task.name!r} does not match program {program.name!r}")
-    config = teacher_config_for(task, teacher_override, allow_paid=allow_paid)
-    teacher = await resolve_teacher(config)
-    try:
-        proposals = await propose_question_rewrites(
-            teacher,
+        task = load_task(task_path)
+        if task.name != program.name:
+            raise ValueError(f"task {task.name!r} does not match program {program.name!r}")
+        config = teacher_config_for(task, teacher_override, allow_paid=allow_paid)
+        teacher = await resolve_teacher(config)
+        try:
+            proposals = await propose_question_rewrites(
+                teacher,
+                program,
+                result.baseline_failures,
+            )
+        finally:
+            await teacher.aclose()
+        result = await optimizer.optimize(
             program,
-            result.baseline_failures,
+            cases,
+            thresholds=thresholds,
+            mutations=proposals,
         )
-    finally:
-        await teacher.aclose()
-    return await optimizer.optimize(
-        program,
-        cases,
-        thresholds=thresholds,
-        mutations=proposals,
-    )
+    return await optimizer.evaluate_held_out(result, dataset.test)
 
 
 async def _run_optimization(
@@ -220,4 +220,12 @@ def optimize_run(
         f"Cache: {result.cache_hits} hits, {result.cache_misses} misses, "
         f"{result.live_calls} live calls"
     )
+    if result.held_out is None:
+        console.print("Held-out test evaluation: [yellow]unavailable[/yellow]")
+    else:
+        console.print(
+            "Held-out test accuracy: "
+            f"baseline={result.held_out.baseline_metrics.accuracy:.3f} "
+            f"selected={result.held_out.selected_metrics.accuracy:.3f}"
+        )
     console.print(f"Wrote optimization artifacts to {destination}")

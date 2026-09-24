@@ -1,4 +1,8 @@
 from jevcompiler.optimizer.adaptive import AdaptiveDatasetBuilder, AdaptiveDatasetResult
+from jevcompiler.optimizer.adaptive_loop import (
+    AdaptiveOptimizationRound,
+    run_adaptive_round,
+)
 from jevcompiler.optimizer.artifacts import write_optimization
 from jevcompiler.optimizer.failures import build_failure_corpus, write_failure_corpus
 from jevcompiler.optimizer.models import (
@@ -29,6 +33,7 @@ from jevcompiler.optimizer.stability import counterfactual_stability
 __all__ = [
     "AdaptiveDatasetBuilder",
     "AdaptiveDatasetResult",
+    "AdaptiveOptimizationRound",
     "CandidateMetrics",
     "CandidateRecord",
     "FailureCase",
@@ -50,6 +55,7 @@ __all__ = [
     "program_id",
     "propose_question_rewrites",
     "remove_question",
+    "run_adaptive_round",
     "rewrite_choice_question",
     "set_confidence_threshold",
     "split_choice_question",

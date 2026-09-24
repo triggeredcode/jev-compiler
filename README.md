@@ -34,6 +34,8 @@ uv run jevcompiler run examples/support-routing/program.yaml \
   examples/support-routing/state.json \
   --answers examples/support-routing/answers.json
 uv run jevcompiler build examples/support-routing/task.yaml --budget quick
+uv run jevcompiler build examples/support-routing/task.yaml \
+  --budget standard --adaptive-cases 4
 uv run jevcompiler artifact verify \
   .jevcompiler/artifacts/support-router/frozen/<candidate-id>
 uv run jevcompiler report \
@@ -46,6 +48,13 @@ dependency order. It validates compatible phase outputs before resuming. Use `--
 small structural search, `standard` for semantic rewrites and a broader search, or `deep` for the
 largest built-in evidence and search budget. Every preset enforces hard ceilings for measured
 candidates and uncached TypeSafe requests.
+
+`--adaptive-cases N` adds one bounded improvement round after the initial optimization. The selected
+program is evaluated on training data, failures drive `N` new train-only cases, the baseline is
+recompiled, and selection is repeated against the unchanged development split before the unchanged
+test split is measured. Candidate and live-call ceilings are shared across both rounds. Validated
+adaptive outputs are resumed only when their source corpus, source candidate, requested case count,
+and resulting corpus hash still match.
 
 Each phase is also available independently:
 

@@ -200,6 +200,14 @@ function requireNumber(value: unknown): number {
   return value;
 }
 
+function truthy(value: unknown): boolean {
+  if (value === null || value === undefined || value === false) return false;
+  if (typeof value === "number") return value !== 0 && !Number.isNaN(value);
+  if (typeof value === "string" || Array.isArray(value)) return value.length > 0;
+  if (typeof value === "object") return Object.keys(value).length > 0;
+  return Boolean(value);
+}
+
 function compare(left: unknown, operator: string, right: unknown): boolean {
   if (operator === "==") return left === right;
   if (operator === "!=") return left !== right;
@@ -260,7 +268,7 @@ class ExpressionParser {
     let value = this.parseAnd();
     while (this.matches("or", "||")) {
       const right = this.parseAnd();
-      value = Boolean(value) || Boolean(right);
+      value = truthy(value) || truthy(right);
     }
     return value;
   }
@@ -269,13 +277,13 @@ class ExpressionParser {
     let value = this.parseNot();
     while (this.matches("and", "&&")) {
       const right = this.parseNot();
-      value = Boolean(value) && Boolean(right);
+      value = truthy(value) && truthy(right);
     }
     return value;
   }
 
   private parseNot(): unknown {
-    if (this.matches("not")) return !Boolean(this.parseNot());
+    if (this.matches("not")) return !truthy(this.parseNot());
     return this.parseComparison();
   }
 
@@ -420,7 +428,7 @@ export async function runProgram(
   if (program.stages.length === 0) throw new Error("program must contain at least one stage");
   const stages = new Map(program.stages.map((node) => [node.id, node]));
   const positions = new Map(program.stages.map((node, index) => [node.id, index]));
-  let current: string | undefined = program.entrypoint ?? program.stages[0].id;
+  let current: string | undefined = program.entrypoint || program.stages[0].id;
   const variables: JsonObject = {};
   const trace: TraceEvent[] = [];
   const visited = new Set<string>();
@@ -433,7 +441,7 @@ export async function runProgram(
     const started_at = new Date().toISOString();
 
     if (node.type === "jev") {
-      if (node.when === undefined || Boolean(evaluateExpression(node.when, variables))) {
+      if (node.when === undefined || truthy(evaluateExpression(node.when, variables))) {
         const response = await provider.evaluate(state, node.questions, { model: program.jev_model });
         const output: JsonObject = {};
         for (const [key, answer] of Object.entries(response.answers)) {
@@ -458,21 +466,21 @@ export async function runProgram(
           output: { skipped: true },
         });
       }
-      current = node.next ?? nextStage(program, positions.get(node.id));
+      current = node.next || nextStage(program, positions.get(node.id));
       continue;
     }
 
     if (node.type === "branch") {
-      const matched = node.rules.find((rule) => Boolean(evaluateExpression(rule.when, variables)));
+      const matched = node.rules.find((rule) => truthy(evaluateExpression(rule.when, variables)));
       const action = matched?.return ?? node.default;
       trace.push({
         stage_id: node.id,
         stage_type: node.type,
         started_at,
-        output: { action },
+        output: { action: action ?? null },
       });
       if (action !== undefined) return { action, variables, trace };
-      current = node.next ?? nextStage(program, positions.get(node.id));
+      current = node.next || nextStage(program, positions.get(node.id));
       continue;
     }
 

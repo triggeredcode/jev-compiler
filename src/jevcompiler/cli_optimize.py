@@ -107,12 +107,17 @@ async def _run_optimization(
     task_path: Path | None,
     teacher_override: str | None,
     allow_paid: bool,
+    max_live_calls: int | None,
 ) -> tuple[OptimizationResult, Path]:
     program = load_program(program_path)
     destination = output or artifact_directory(program.name, "optimization")
     with JevCache(cache_path) as cache:
         if cache_mode is CacheMode.replay_only:
-            provider = CachingSystemOneProvider(cache, mode=cache_mode)
+            provider = CachingSystemOneProvider(
+                cache,
+                mode=cache_mode,
+                max_live_calls=max_live_calls,
+            )
             result = await _optimize_with_provider(
                 provider,
                 program_path=program_path,
@@ -131,6 +136,7 @@ async def _run_optimization(
                     cache,
                     live_provider,
                     mode=cache_mode,
+                    max_live_calls=max_live_calls,
                 )
                 result = await _optimize_with_provider(
                     provider,
@@ -171,6 +177,10 @@ def optimize_run(
         bool,
         typer.Option(help="Explicitly allow a non-free rewrite teacher."),
     ] = False,
+    max_live_calls: Annotated[
+        int | None,
+        typer.Option(min=0, help="Hard ceiling for uncached TypeSafe requests."),
+    ] = None,
 ) -> None:
     """Optimize thresholds on one selection split while preserving complete lineage."""
     try:
@@ -189,6 +199,7 @@ def optimize_run(
                 task_path=task,
                 teacher_override=teacher,
                 allow_paid=allow_paid,
+                max_live_calls=max_live_calls,
             )
         )
     except (

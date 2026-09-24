@@ -121,7 +121,6 @@ class OpenAICompatibleTeacher:
         if self.require_parameters:
             payload["provider"] = {"require_parameters": True, "allow_fallbacks": True}
 
-        response: httpx.Response | None = None
         for attempt in range(self.max_retries + 1):
             try:
                 response = await self._client.post("chat/completions", json=payload)
@@ -131,31 +130,39 @@ class OpenAICompatibleTeacher:
                     await asyncio.sleep(max(retry_after, 0.0))
                     continue
                 response.raise_for_status()
-                break
             except (httpx.HTTPError, ValueError) as exc:
                 if attempt < self.max_retries:
                     await asyncio.sleep(min(2**attempt, 5))
                     continue
                 raise TeacherError(f"{self.provider} request failed: {redact(str(exc))}") from None
-        if response is None:
-            raise TeacherError(f"{self.provider} request produced no response")
-
-        try:
-            body = response.json()
-            choices = body["choices"]
-            content = choices[0]["message"]["content"]
-            value = schema.model_validate(_json_content(content))
-        except (KeyError, IndexError, TypeError, ValueError, ValidationError) as exc:
-            raise TeacherError(
-                f"{self.provider} returned an invalid structured response: {redact(str(exc))}"
-            ) from None
-        return StructuredGeneration(
-            value=value,
-            provider=self.provider,
-            requested_model=self.model,
-            actual_model=str(body.get("model") or self.model),
-            usage=body.get("usage") if isinstance(body.get("usage"), dict) else {},
-        )
+            try:
+                body = response.json()
+                choices = body["choices"]
+                content = choices[0]["message"]["content"]
+                value = schema.model_validate(_json_content(content))
+            except (
+                KeyError,
+                IndexError,
+                TypeError,
+                ValueError,
+                ValidationError,
+                TeacherError,
+            ) as exc:
+                if attempt < self.max_retries:
+                    await asyncio.sleep(min(2**attempt, 5))
+                    continue
+                raise TeacherError(
+                    f"{self.provider} returned an invalid structured response: "
+                    f"{redact(str(exc))}"
+                ) from None
+            return StructuredGeneration(
+                value=value,
+                provider=self.provider,
+                requested_model=self.model,
+                actual_model=str(body.get("model") or self.model),
+                usage=body.get("usage") if isinstance(body.get("usage"), dict) else {},
+            )
+        raise TeacherError(f"{self.provider} request produced no response")
 
     async def aclose(self) -> None:
         if self._owns_client:

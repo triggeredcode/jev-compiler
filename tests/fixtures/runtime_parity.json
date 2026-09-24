@@ -1,0 +1,110 @@
+{
+  "cases": [
+    {
+      "name": "batched answers, skipped stage, and expression branch",
+      "program": {
+        "version": 1,
+        "name": "parity-router",
+        "actions": ["billing", "review"],
+        "jev_model": "jev-parity",
+        "stages": [
+          {
+            "id": "assess",
+            "type": "jev",
+            "questions": {
+              "route": {
+                "type": "choice",
+                "instructions": "Choose a route.",
+                "criteria": {"billing": "Payment", "review": "Anything else"}
+              },
+              "severity": {
+                "type": "score",
+                "instructions": "Score severity.",
+                "criteria": ["low", "high"]
+              },
+              "urgent": {"type": "noul", "instructions": "Is this urgent?"}
+            }
+          },
+          {
+            "id": "optional",
+            "type": "jev",
+            "when": "urgent >= 0.9",
+            "questions": {
+              "escalate": {"type": "noul", "instructions": "Escalate?"}
+            }
+          },
+          {
+            "id": "decide",
+            "type": "branch",
+            "rules": [
+              {
+                "when": "route.choice == 'billing' and route.confidence >= 0.8 and 0.5 < severity.score <= 0.9 and not urgent > 0.8 and max(severity.score, abs(-0.2)) + min(0.2, urgent) * 1 >= 0.9",
+                "return": "billing"
+              }
+            ],
+            "next": "fallback"
+          },
+          {"id": "fallback", "type": "return", "value": "review"}
+        ]
+      },
+      "state": {"body": "I was charged twice"},
+      "responses": [
+        {
+          "model": "jev-parity",
+          "answers": {
+            "route": {
+              "type": "choice",
+              "choice": "billing",
+              "confidence": 0.9,
+              "probabilities": {"billing": 0.9, "review": 0.1}
+            },
+            "severity": {
+              "type": "score",
+              "score": 0.75,
+              "confidence": 0.8,
+              "probabilities": {"low": 0.25, "high": 0.75},
+              "legend": {"low": "Routine", "high": "Serious"}
+            },
+            "urgent": {"type": "noul", "noul": 0.2}
+          }
+        }
+      ]
+    },
+    {
+      "name": "explicit return",
+      "program": {
+        "version": 1,
+        "name": "return-only",
+        "actions": ["accept"],
+        "jev_model": "jev-parity",
+        "stages": [{"id": "done", "type": "return", "value": "accept"}]
+      },
+      "state": {},
+      "responses": []
+    },
+    {
+      "name": "cycle rejection",
+      "program": {
+        "version": 1,
+        "name": "cycle-runtime",
+        "actions": ["done"],
+        "jev_model": "jev-parity",
+        "stages": [
+          {
+            "id": "again",
+            "type": "jev",
+            "next": "again",
+            "questions": {"ok": {"type": "noul", "instructions": "Okay?"}}
+          }
+        ]
+      },
+      "state": {},
+      "responses": [
+        {
+          "model": "jev-parity",
+          "answers": {"ok": {"type": "noul", "noul": 1.0}}
+        }
+      ]
+    }
+  ]
+}

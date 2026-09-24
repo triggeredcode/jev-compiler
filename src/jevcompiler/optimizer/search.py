@@ -11,6 +11,7 @@ from jevcompiler.optimizer.failures import build_failure_corpus
 from jevcompiler.optimizer.models import (
     CandidateMetrics,
     CandidateRecord,
+    HeldOutEvaluation,
     OptimizationResult,
 )
 from jevcompiler.optimizer.mutations import (
@@ -226,6 +227,43 @@ class Optimizer:
             selection_digest=content_digest(
                 [case.model_dump(mode="json") for case in cases]
             ),
+        )
+
+    async def evaluate_held_out(
+        self,
+        result: OptimizationResult,
+        cases: list[DatasetCase],
+    ) -> OptimizationResult:
+        """Measure the frozen selection on untouched cases without reselecting it."""
+        if not cases:
+            return result.model_copy(update={"held_out": None})
+
+        by_id = {candidate.candidate_id: candidate for candidate in result.candidates}
+        baseline = by_id[result.baseline_candidate_id]
+        selected = by_id[result.selected_candidate_id]
+        baseline_report = await self.evaluator.evaluate(baseline.program, cases=cases)
+        if baseline.candidate_id == selected.candidate_id:
+            selected_report = baseline_report
+        else:
+            selected_report = await self.evaluator.evaluate(selected.program, cases=cases)
+
+        stats = getattr(self.provider, "stats", None)
+        held_out = HeldOutEvaluation(
+            digest=content_digest([case.model_dump(mode="json") for case in cases]),
+            baseline_candidate_id=baseline.candidate_id,
+            selected_candidate_id=selected.candidate_id,
+            baseline_metrics=candidate_metrics(baseline.program, baseline_report),
+            selected_metrics=candidate_metrics(selected.program, selected_report),
+            baseline_evaluation=baseline_report,
+            selected_evaluation=selected_report,
+        )
+        return result.model_copy(
+            update={
+                "held_out": held_out,
+                "cache_hits": stats.hits if stats else result.cache_hits,
+                "cache_misses": stats.misses if stats else result.cache_misses,
+                "live_calls": stats.live_calls if stats else result.live_calls,
+            }
         )
 
     async def _evaluate(

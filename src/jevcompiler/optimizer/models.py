@@ -62,6 +62,17 @@ class CandidateRecord(StrictModel):
     evaluation: EvaluationReport | None = None
 
 
+class HeldOutEvaluation(StrictModel):
+    split: Literal["test"] = "test"
+    digest: str = Field(pattern=r"^[a-f0-9]{64}$")
+    baseline_candidate_id: str
+    selected_candidate_id: str
+    baseline_metrics: CandidateMetrics
+    selected_metrics: CandidateMetrics
+    baseline_evaluation: EvaluationReport
+    selected_evaluation: EvaluationReport
+
+
 class OptimizationResult(StrictModel):
     baseline_candidate_id: str
     selected_candidate_id: str
@@ -73,3 +84,4 @@ class OptimizationResult(StrictModel):
     cache_misses: int = Field(ge=0)
     live_calls: int = Field(ge=0)
     selection_digest: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
+    held_out: HeldOutEvaluation | None = None

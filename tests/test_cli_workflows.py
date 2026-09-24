@@ -1,6 +1,7 @@
 from typer.testing import CliRunner
 
 from jevcompiler.cli import app
+from jevcompiler.cli_build import BUDGETS, BuildBudget
 from jevcompiler.cli_common import teacher_config_for
 from jevcompiler.cli_optimize import parse_thresholds
 from jevcompiler.specs.task import TaskSpec
@@ -61,3 +62,13 @@ def test_artifact_commands_are_exposed() -> None:
     assert freeze_help.exit_code == 0
     assert verify_help.exit_code == 0
     assert "OPTIMIZATION_PATH" in freeze_help.output.upper()
+
+
+def test_build_command_exposes_budgets_and_resume() -> None:
+    result = CliRunner().invoke(app, ["build", "--help"])
+
+    assert result.exit_code == 0
+    assert "quick" in result.output
+    assert "--resume" in result.output
+    assert BUDGETS[BuildBudget.quick].semantic is False
+    assert BUDGETS[BuildBudget.standard].semantic is True

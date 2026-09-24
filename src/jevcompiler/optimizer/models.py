@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from jevcompiler.baseline.models import EvaluationReport
 from jevcompiler.dataset.models import CaseBucket, CaseProvenance, LabelMetadata
 from jevcompiler.runtime.execution import TraceEvent
+from jevcompiler.specs.program import DecisionProgram
 
 
 class StrictModel(BaseModel):
@@ -35,3 +37,38 @@ class FailureCorpus(StrictModel):
     total_failures: int = Field(ge=0)
     cases: list[FailureCase]
     clusters: list[FailureCluster]
+
+
+class CandidateMetrics(StrictModel):
+    accuracy: float = Field(ge=0, le=1)
+    macro_f1: float = Field(ge=0, le=1)
+    jev_calls: int = Field(ge=0)
+    question_count: int = Field(ge=0)
+    question_tokens: int = Field(ge=0)
+    graph_complexity: int = Field(ge=0)
+
+
+class CandidateRecord(StrictModel):
+    candidate_id: str = Field(pattern=r"^candidate_[a-f0-9]{16}$")
+    parent_id: str | None = None
+    generation: int = Field(ge=0)
+    mutation_type: str
+    hypothesis: str
+    semantic_diff: str
+    status: Literal["baseline", "frontier", "selected", "rejected", "invalid"]
+    rejection_reason: str | None = None
+    program: DecisionProgram
+    metrics: CandidateMetrics | None = None
+    evaluation: EvaluationReport | None = None
+
+
+class OptimizationResult(StrictModel):
+    baseline_candidate_id: str
+    selected_candidate_id: str
+    pareto_frontier: list[str]
+    candidates: list[CandidateRecord]
+    baseline_failures: FailureCorpus
+    selected_failures: FailureCorpus
+    cache_hits: int = Field(ge=0)
+    cache_misses: int = Field(ge=0)
+    live_calls: int = Field(ge=0)

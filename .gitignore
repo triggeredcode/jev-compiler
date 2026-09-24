@@ -1,11 +1,5 @@
-# Private inputs and project-local runtime data
+# Project-local workspace
 .jevcompiler/
-docs/
-private-specs/
-spec.md
-keys.env
-*.env
-!.env.example
 
 # Python environments and bytecode
 .venv/

@@ -26,7 +26,6 @@ class CacheMissError(CacheError):
 class CacheMode(StrEnum):
     read_write = "read_write"
     replay_only = "replay_only"
-    refresh = "refresh"
 
 
 @dataclass(slots=True)
@@ -143,11 +142,10 @@ class CachingSystemOneProvider:
         key = hashlib.sha256(_canonical_json(request).encode()).hexdigest()
         lock = self._locks.setdefault(key, asyncio.Lock())
         async with lock:
-            if self.mode is not CacheMode.refresh:
-                cached = self.cache.get(key)
-                if cached is not None:
-                    self.stats.hits += 1
-                    return cached
+            cached = self.cache.get(key)
+            if cached is not None:
+                self.stats.hits += 1
+                return cached
 
             self.stats.misses += 1
             if self.mode is CacheMode.replay_only or self.upstream is None:

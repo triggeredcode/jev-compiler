@@ -8,6 +8,7 @@ from jevcompiler.providers.cache import (
     CacheMode,
     CachingSystemOneProvider,
     JevCache,
+    LiveCallBudgetExceeded,
     cache_key,
 )
 from jevcompiler.specs.program import ChoiceQuestion
@@ -74,3 +75,57 @@ def test_replay_only_fails_closed_on_cache_miss(tmp_path) -> None:
         provider = CachingSystemOneProvider(cache, mode=CacheMode.replay_only)
         with pytest.raises(CacheMissError, match="no recorded Jev response"):
             asyncio.run(provider.evaluate({"body": "new"}, _questions(), model="jev-test"))
+
+
+def test_live_call_budget_is_a_hard_concurrent_ceiling(tmp_path) -> None:
+    async def exercise():
+        upstream = CountingProvider()
+        with JevCache(tmp_path / "jev.sqlite3") as cache:
+            provider = CachingSystemOneProvider(
+                cache,
+                upstream,
+                max_live_calls=2,
+            )
+            results = await asyncio.gather(
+                *(
+                    provider.evaluate(
+                        {"body": f"ticket {index}"},
+                        _questions(),
+                        model="jev-test",
+                    )
+                    for index in range(3)
+                ),
+                return_exceptions=True,
+            )
+            return upstream.calls, provider.stats.live_calls, results
+
+    calls, live_calls, results = asyncio.run(exercise())
+
+    assert calls == 2
+    assert live_calls == 2
+    assert sum(isinstance(result, LiveCallBudgetExceeded) for result in results) == 1
+
+
+def test_cached_answers_remain_available_after_budget_is_exhausted(tmp_path) -> None:
+    async def exercise():
+        upstream = CountingProvider()
+        with JevCache(tmp_path / "jev.sqlite3") as cache:
+            provider = CachingSystemOneProvider(
+                cache,
+                upstream,
+                max_live_calls=1,
+            )
+            first = await provider.evaluate(
+                {"body": "charged"}, _questions(), model="jev-test"
+            )
+            replay = await provider.evaluate(
+                {"body": "charged"}, _questions(), model="jev-test"
+            )
+            return first, replay, upstream.calls, provider.stats
+
+    first, replay, calls, stats = asyncio.run(exercise())
+
+    assert first == replay
+    assert calls == 1
+    assert stats.live_calls == 1
+    assert stats.hits == 1

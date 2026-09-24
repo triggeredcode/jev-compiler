@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from datetime import UTC, datetime
+from importlib.resources import files
 from pathlib import Path, PurePosixPath
 
 import yaml
@@ -52,6 +53,10 @@ def _write_json(path: Path, value: object) -> None:
         json.dumps(value, indent=2, sort_keys=True, ensure_ascii=False),
         encoding="utf-8",
     )
+
+
+def _typescript_runtime_source() -> str:
+    return files("jevcompiler.freeze").joinpath("runtime.ts").read_text(encoding="utf-8")
 
 
 def frozen_artifact_id(result: OptimizationResult) -> str:
@@ -103,6 +108,7 @@ def freeze_optimization(
         yaml.safe_dump(program_data, sort_keys=False),
         encoding="utf-8",
     )
+    _write_json(output / "program.json", program_data)
     _write_json(output / "metrics.json", selected.evaluation.model_dump(mode="json"))
     if result.held_out is not None:
         _write_json(output / "held-out.json", result.held_out.model_dump(mode="json"))
@@ -139,6 +145,7 @@ def freeze_optimization(
     )
     _write_json(output / "dataset-manifest.json", dataset.manifest.model_dump(mode="json"))
     (output / "runtime.py").write_text(_RUNTIME_SOURCE, encoding="utf-8")
+    (output / "runtime.ts").write_text(_typescript_runtime_source(), encoding="utf-8")
     (output / "report.html").write_text(render_report(result), encoding="utf-8")
 
     payload_files = sorted(path for path in output.iterdir() if path.is_file())
@@ -201,4 +208,10 @@ def verify_artifact(root: Path) -> FrozenManifest:
         raise ArtifactError(f"unable to validate frozen program: {exc}") from None
     if content_digest(program_data) != manifest.program_digest:
         raise ArtifactError("frozen program digest does not match the manifest")
+    try:
+        json_program_data = json.loads((root / "program.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise ArtifactError(f"unable to validate frozen JSON program: {exc}") from None
+    if content_digest(json_program_data) != manifest.program_digest:
+        raise ArtifactError("frozen JSON program digest does not match the manifest")
     return manifest

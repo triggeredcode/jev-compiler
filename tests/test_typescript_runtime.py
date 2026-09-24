@@ -15,6 +15,7 @@ from jevcompiler.specs.program import DecisionProgram
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "tests" / "fixtures" / "runtime_parity.json"
 RUNNER = ROOT / "tests" / "typescript" / "run-runtime-parity.mjs"
+FROZEN_RUNNER = ROOT / "tests" / "typescript" / "run-frozen-runtime.mjs"
 TYPESCRIPT_RUNTIME = ROOT / "src" / "jevcompiler" / "freeze" / "runtime.ts"
 
 
@@ -86,3 +87,30 @@ def test_typescript_runtime_matches_python_fixtures() -> None:
     assert typescript_results[0]["result"]["trace"][1]["output"] == {"skipped": True}
     assert typescript_results[1]["result"]["action"] == "accept"
     assert typescript_results[2]["error"] == "cycle detected at stage again"
+
+
+def test_typescript_decide_loads_adjacent_frozen_program(tmp_path: Path) -> None:
+    node = _node_22()
+    fixture = json.loads(FIXTURE.read_text(encoding="utf-8"))
+    return_program = fixture["cases"][1]["program"]
+    runtime = tmp_path / "runtime.ts"
+    shutil.copyfile(TYPESCRIPT_RUNTIME, runtime)
+    (tmp_path / "program.json").write_text(
+        json.dumps(return_program),
+        encoding="utf-8",
+    )
+
+    completed = subprocess.run(
+        [
+            node,
+            "--no-warnings",
+            "--experimental-strip-types",
+            str(FROZEN_RUNNER),
+            str(runtime),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert json.loads(completed.stdout) == {"action": "accept", "variables": {}}

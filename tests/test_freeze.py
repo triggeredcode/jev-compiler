@@ -145,6 +145,9 @@ def test_frozen_artifact_is_complete_and_verifiable(tmp_path) -> None:
     assert manifest.created_at <= datetime.now(UTC)
     assert verify_artifact(root) == manifest
     assert (root / "runtime.py").exists()
+    assert (root / "runtime.ts").exists()
+    assert (root / "program.json").exists()
+    assert {"runtime.py", "runtime.ts", "program.yaml", "program.json"} <= set(manifest.files)
     assert (root / "held-out.json").exists()
     assert manifest.held_out_metrics is not None
     report = (root / "report.html").read_text(encoding="utf-8")

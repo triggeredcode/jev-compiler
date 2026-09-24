@@ -10,8 +10,8 @@ a generic prompt optimizer, a hosted service, or a model-training/distillation s
 > provenance-aware dataset synthesis, constrained baseline compiler/evaluator, and the measurable
 > optimization core are implemented. Failure-directed training evidence and paired counterfactual
 > stability are included. Semantics-preserving input variations measure whether rephrasing changes
-> a program's decision. The compiler can produce verified, immutable deployment artifacts with a
-> self-contained inspection report.
+> a program's decision. The compiler produces verified, immutable deployment artifacts with Python
+> and TypeScript runtimes plus a self-contained inspection report.
 
 ## Why this shape
 
@@ -24,6 +24,12 @@ decision requirement -> teacher-generated cases -> Jev graph -> evaluate -> opti
 ```
 
 The production artifact does not need its development-time teacher model.
+
+Each frozen artifact contains `program.yaml`, a matching `program.json`, `runtime.py`, and a
+dependency-free `runtime.ts`. The TypeScript export exposes `runProgram(program, state, provider)`
+and `decide(state, provider)`; `decide` loads the adjacent `program.json`. Its provider implements
+one asynchronous `evaluate(state, questions, { model })` method. Node.js 22 can execute the export
+directly with type stripping, and ordinary TypeScript toolchains can compile it for other runtimes.
 
 ## Quick start
 
@@ -127,7 +133,7 @@ candidate lineage, and failure evidence.
 - `src/jevcompiler/dataset`: provenance, labeling, validation, and deterministic splits
 - `src/jevcompiler/baseline`: constrained compilation and trace-rich evaluation
 - `src/jevcompiler/optimizer`: cache/replay, failure evidence, mutations, lineage, and Pareto search
-- `src/jevcompiler/freeze`: immutable artifact manifests, integrity verification, and static reports
+- `src/jevcompiler/freeze`: immutable artifacts, Python/TypeScript exports, verification, and reports
 - `src/jevcompiler/security.py`: log-safe secret redaction
 - `examples/support-routing`: runnable offline example
 

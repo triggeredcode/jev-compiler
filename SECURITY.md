@@ -13,6 +13,5 @@ Include a minimal reproduction, affected version, and likely impact.
 - API credentials come from environment variables and are redacted from user-facing errors.
 - Paid provider fallback is disabled unless the caller explicitly opts in.
 
-Never commit `keys.env`, `.env`, recordings containing sensitive states, or provider responses that
-contain private data.
-
+Keep credentials, private specifications, sensitive recordings, and provider responses inside the
+project-local workspace or another location outside version control.

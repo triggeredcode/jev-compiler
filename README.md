@@ -6,9 +6,9 @@ TypeSafe Jev questions, probabilities, thresholds, and deterministic branches.
 The project is an **automatic compiler for Jev decision workflows**. It is not an agent harness,
 a generic prompt optimizer, a hosted service, or a model-training/distillation system.
 
-> Status: the repository foundation, typed DSL, safe expression evaluator, offline runtime,
-> TypeSafe HTTP boundary, local-first provider discovery, CLI, and tests are implemented. Dataset
-> synthesis and optimization are the next delivery slice.
+> Status: the foundation, typed DSL, safe runtime, TypeSafe boundary, structured teacher layer,
+> provenance-aware dataset synthesis, and constrained baseline compiler/evaluator are implemented.
+> Threshold and semantic optimization are the next delivery slice.
 
 ## Why this shape
 
@@ -31,6 +31,10 @@ uv run jevcompiler validate examples/support-routing/program.yaml --kind program
 uv run jevcompiler run examples/support-routing/program.yaml \
   examples/support-routing/state.json \
   --answers examples/support-routing/answers.json
+uv run jevcompiler dataset build examples/support-routing/task.yaml --normal 8 --boundary 4
+uv run jevcompiler baseline build \
+  examples/support-routing/task.yaml \
+  dist/support-router/dataset
 uv run pytest
 ```
 
@@ -46,14 +50,18 @@ Automatic selection is intentionally cost-safe:
 3. OpenRouter's free router when `OPENROUTER_API_KEY` is configured
 4. A paid OpenRouter model only after explicit opt-in
 
-Run `jevcompiler doctor` to see availability without printing secrets. Provider selection for the
-teacher and TypeSafe's Jev execution are separate concerns.
+Run `jevcompiler doctor` to see availability without printing secrets. The dataset and baseline
+commands use this order automatically. A paid model requires both a non-free model override and
+`--allow-paid`; it is never selected implicitly. Provider selection for the teacher and TypeSafe's
+Jev execution are separate concerns.
 
 ## Repository map
 
 - `src/jevcompiler/specs`: canonical TaskSpec and restricted DecisionProgram DSL
 - `src/jevcompiler/runtime`: safe expression interpreter and graph execution
-- `src/jevcompiler/providers`: Jev provider protocol, TypeSafe client, and teacher discovery
+- `src/jevcompiler/providers`: TypeSafe client and local-first structured teacher adapters
+- `src/jevcompiler/dataset`: provenance, labeling, validation, and deterministic splits
+- `src/jevcompiler/baseline`: constrained compilation and trace-rich evaluation
 - `src/jevcompiler/security.py`: log-safe secret redaction
 - `docs/spec/`: progressive specification from big picture to concrete delivery slices
 - `docs/IMPLEMENTATION_PLAN.md`: dependency-aware execution tracker

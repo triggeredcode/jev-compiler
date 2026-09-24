@@ -66,6 +66,7 @@ class BudgetSettings:
     boundary: int
     edge: int
     counterfactual: int
+    semantic_variation: int
     thresholds: tuple[float, ...]
     semantic: bool
     max_live_calls: int
@@ -73,9 +74,10 @@ class BudgetSettings:
 
 
 BUDGETS = {
-    BuildBudget.quick: BudgetSettings(4, 2, 1, 1, (0.5, 0.65, 0.8), False, 50, 12),
+    BuildBudget.quick: BudgetSettings(4, 2, 1, 1, 0, (0.5, 0.65, 0.8), False, 50, 12),
     BuildBudget.standard: BudgetSettings(
         8,
+        4,
         4,
         4,
         4,
@@ -86,6 +88,7 @@ BUDGETS = {
     ),
     BuildBudget.deep: BudgetSettings(
         20,
+        10,
         10,
         10,
         10,
@@ -201,6 +204,7 @@ async def _build_all(
             settings.boundary,
             settings.edge,
             settings.counterfactual,
+            settings.semantic_variation,
             42,
         )
         dataset = read_dataset(dataset_dir)

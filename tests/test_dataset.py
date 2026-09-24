@@ -143,3 +143,97 @@ def test_dataset_rejects_an_undersized_generated_batch() -> None:
                 counterfactual=0,
             )
         )
+
+
+def test_semantic_variations_keep_parent_split_and_expected_action() -> None:
+    parent_id = "case_316387808690530b"
+    variation_id = "case_48e0475ad1e20999"
+    teacher = RecordedTeacherProvider(
+        [
+            {"cases": [{"state": {"body": "charged twice"}, "summary": "billing"}]},
+            {
+                "labels": [
+                    {
+                        "case_id": parent_id,
+                        "decision": "billing",
+                        "confidence": 0.9,
+                    }
+                ]
+            },
+            {
+                "cases": [
+                    {
+                        "state": {"body": "I was billed twice"},
+                        "summary": "billing rephrased",
+                        "parent_id": parent_id,
+                    }
+                ]
+            },
+            {
+                "labels": [
+                    {
+                        "case_id": variation_id,
+                        "decision": "billing",
+                        "confidence": 0.9,
+                    }
+                ]
+            },
+        ]
+    )
+
+    bundle = asyncio.run(
+        DatasetBuilder(teacher).build(
+            _task().model_copy(update={"examples": []}),
+            normal=1,
+            boundary=0,
+            edge=0,
+            counterfactual=0,
+            semantic_variation=1,
+        )
+    )
+
+    assert bundle.manifest.bucket_counts["semantic_variation"] == 1
+    assert [case.id for case in bundle.train] == [parent_id, variation_id]
+    assert bundle.train[1].parent_id == parent_id
+    assert bundle.train[1].expected_action == bundle.train[0].expected_action
+
+
+def test_semantic_variations_reject_changed_expected_action() -> None:
+    parent_id = "case_316387808690530b"
+    variation_id = "case_48e0475ad1e20999"
+    teacher = RecordedTeacherProvider(
+        [
+            {"cases": [{"state": {"body": "charged twice"}, "summary": "billing"}]},
+            {
+                "labels": [
+                    {"case_id": parent_id, "decision": "billing", "confidence": 0.9}
+                ]
+            },
+            {
+                "cases": [
+                    {
+                        "state": {"body": "I was billed twice"},
+                        "summary": "billing rephrased",
+                        "parent_id": parent_id,
+                    }
+                ]
+            },
+            {
+                "labels": [
+                    {"case_id": variation_id, "decision": "technical", "confidence": 0.9}
+                ]
+            },
+        ]
+    )
+
+    with pytest.raises(DatasetBuildError, match="changed the expected action"):
+        asyncio.run(
+            DatasetBuilder(teacher).build(
+                _task().model_copy(update={"examples": []}),
+                normal=1,
+                boundary=0,
+                edge=0,
+                counterfactual=0,
+                semantic_variation=1,
+            )
+        )

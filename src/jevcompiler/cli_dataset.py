@@ -35,6 +35,7 @@ async def _build_dataset(
     boundary: int,
     edge: int,
     counterfactual: int,
+    semantic_variation: int,
     seed: int,
 ) -> tuple[Path, int, str, str]:
     task = load_task(task_path)
@@ -48,6 +49,7 @@ async def _build_dataset(
             boundary=boundary,
             edge=edge,
             counterfactual=counterfactual,
+            semantic_variation=semantic_variation,
             seed=seed,
         )
         write_dataset(bundle, destination)
@@ -102,6 +104,13 @@ def build_dataset(
     boundary: Annotated[int, typer.Option(min=0)] = 4,
     edge: Annotated[int, typer.Option(min=0)] = 4,
     counterfactual: Annotated[int, typer.Option(min=0)] = 4,
+    semantic_variation: Annotated[
+        int,
+        typer.Option(
+            help="Number of semantics-preserving parent/variant pairs to generate.",
+            min=0,
+        ),
+    ] = 0,
     seed: Annotated[int, typer.Option()] = 42,
 ) -> None:
     """Generate, label, validate, and deterministically split a dataset."""
@@ -116,6 +125,7 @@ def build_dataset(
                 boundary,
                 edge,
                 counterfactual,
+                semantic_variation,
                 seed,
             )
         )

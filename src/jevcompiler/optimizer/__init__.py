@@ -1,3 +1,4 @@
+from jevcompiler.optimizer.artifacts import write_optimization
 from jevcompiler.optimizer.failures import build_failure_corpus, write_failure_corpus
 from jevcompiler.optimizer.models import (
     CandidateMetrics,
@@ -40,4 +41,5 @@ __all__ = [
     "rewrite_choice_question",
     "set_confidence_threshold",
     "write_failure_corpus",
+    "write_optimization",
 ]

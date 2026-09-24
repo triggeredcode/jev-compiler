@@ -18,11 +18,18 @@ from jevcompiler.specs.program import DecisionProgram
 
 
 class BaselineEvaluator:
-    def __init__(self, provider: SystemOneProvider, *, concurrency: int = 10) -> None:
+    def __init__(
+        self,
+        provider: SystemOneProvider,
+        *,
+        concurrency: int = 10,
+        fatal_errors: tuple[type[Exception], ...] = (),
+    ) -> None:
         if concurrency < 1:
             raise ValueError("concurrency must be positive")
         self.provider = provider
         self.concurrency = concurrency
+        self.fatal_errors = fatal_errors
 
     async def evaluate(
         self, program: DecisionProgram, cases: list[DatasetCase]
@@ -40,6 +47,8 @@ class BaselineEvaluator:
                         correct=result.action == case.expected_action,
                         trace=result.trace,
                     )
+                except self.fatal_errors:
+                    raise
                 except Exception as exc:  # Runtime/provider failures are evaluation evidence.
                     return CaseEvaluation(
                         case_id=case.id,
@@ -99,4 +108,3 @@ class BaselineEvaluator:
             confusion=normalized_confusion,
             cases=results,
         )
-

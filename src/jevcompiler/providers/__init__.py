@@ -5,6 +5,15 @@ from jevcompiler.providers.base import (
     SystemOneProvider,
     SystemOneResult,
 )
+from jevcompiler.providers.cache import (
+    CacheError,
+    CacheMissError,
+    CacheMode,
+    CacheStats,
+    CachingSystemOneProvider,
+    JevCache,
+    cache_key,
+)
 from jevcompiler.providers.fake import RecordedSystemOneProvider
 from jevcompiler.providers.teacher import (
     OpenAICompatibleTeacher,
@@ -16,7 +25,13 @@ from jevcompiler.providers.teacher import (
 from jevcompiler.providers.typesafe import TypeSafeProvider
 
 __all__ = [
+    "CacheError",
+    "CacheMissError",
+    "CacheMode",
+    "CacheStats",
+    "CachingSystemOneProvider",
     "ChoiceAnswer",
+    "JevCache",
     "NoulAnswer",
     "OpenAICompatibleTeacher",
     "RecordedTeacherProvider",
@@ -27,5 +42,6 @@ __all__ = [
     "StructuredGeneration",
     "TeacherProvider",
     "TypeSafeProvider",
+    "cache_key",
     "resolve_teacher",
 ]

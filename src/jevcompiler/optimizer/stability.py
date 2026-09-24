@@ -19,7 +19,7 @@ def counterfactual_stability(
     pairs = 0
 
     for child in cases:
-        if child.parent_id is None or child.parent_id not in evidence:
+        if child.bucket != "counterfactual" or child.parent_id not in evidence:
             continue
         parent = evidence[child.parent_id]
         parent_result = evaluations.get(parent.id)

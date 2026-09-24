@@ -1,3 +1,4 @@
+from jevcompiler.optimizer.adaptive import AdaptiveDatasetBuilder, AdaptiveDatasetResult
 from jevcompiler.optimizer.artifacts import write_optimization
 from jevcompiler.optimizer.failures import build_failure_corpus, write_failure_corpus
 from jevcompiler.optimizer.models import (
@@ -25,6 +26,8 @@ from jevcompiler.optimizer.proposals import ProposalError, propose_question_rewr
 from jevcompiler.optimizer.search import Optimizer, candidate_metrics, pareto_frontier
 
 __all__ = [
+    "AdaptiveDatasetBuilder",
+    "AdaptiveDatasetResult",
     "CandidateMetrics",
     "CandidateRecord",
     "FailureCase",

@@ -57,6 +57,7 @@ async def _optimize_with_provider(
     task_path: Path | None,
     teacher_override: str | None,
     allow_paid: bool,
+    max_candidates: int | None,
 ) -> OptimizationResult:
     program = load_program(program_path)
     dataset = read_dataset(dataset_path)
@@ -66,7 +67,12 @@ async def _optimize_with_provider(
         )
     cases = getattr(dataset, split.value)
     optimizer = Optimizer(provider, concurrency=concurrency)
-    result = await optimizer.optimize(program, cases, thresholds=thresholds)
+    result = await optimizer.optimize(
+        program,
+        cases,
+        thresholds=thresholds,
+        max_candidates=max_candidates,
+    )
     if semantic:
         if task_path is None:
             raise ValueError("--semantic requires --task")
@@ -89,6 +95,7 @@ async def _optimize_with_provider(
             cases,
             thresholds=thresholds,
             mutations=proposals,
+            max_candidates=max_candidates,
         )
     return await optimizer.evaluate_held_out(result, dataset.test)
 
@@ -108,6 +115,7 @@ async def _run_optimization(
     teacher_override: str | None,
     allow_paid: bool,
     max_live_calls: int | None,
+    max_candidates: int | None,
 ) -> tuple[OptimizationResult, Path]:
     program = load_program(program_path)
     destination = output or artifact_directory(program.name, "optimization")
@@ -129,6 +137,7 @@ async def _run_optimization(
                 task_path=task_path,
                 teacher_override=teacher_override,
                 allow_paid=allow_paid,
+                max_candidates=max_candidates,
             )
         else:
             async with TypeSafeProvider() as live_provider:
@@ -149,6 +158,7 @@ async def _run_optimization(
                     task_path=task_path,
                     teacher_override=teacher_override,
                     allow_paid=allow_paid,
+                    max_candidates=max_candidates,
                 )
     write_optimization(result, destination)
     return result, destination
@@ -181,6 +191,10 @@ def optimize_run(
         int | None,
         typer.Option(min=0, help="Hard ceiling for uncached TypeSafe requests."),
     ] = None,
+    max_candidates: Annotated[
+        int | None,
+        typer.Option(min=1, help="Hard ceiling for measured candidate programs."),
+    ] = None,
 ) -> None:
     """Optimize thresholds on one selection split while preserving complete lineage."""
     try:
@@ -200,6 +214,7 @@ def optimize_run(
                 teacher_override=teacher,
                 allow_paid=allow_paid,
                 max_live_calls=max_live_calls,
+                max_candidates=max_candidates,
             )
         )
     except (
@@ -238,5 +253,10 @@ def optimize_run(
             "Held-out test accuracy: "
             f"baseline={result.held_out.baseline_metrics.accuracy:.3f} "
             f"selected={result.held_out.selected_metrics.accuracy:.3f}"
+        )
+    if result.search is not None:
+        console.print(
+            f"Search: {result.search.evaluated_candidates} candidates; "
+            f"stopped={result.search.stop_reason}"
         )
     console.print(f"Wrote optimization artifacts to {destination}")

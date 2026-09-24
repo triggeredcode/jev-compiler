@@ -9,7 +9,8 @@ a generic prompt optimizer, a hosted service, or a model-training/distillation s
 > Status: the foundation, typed DSL, safe runtime, TypeSafe boundary, structured teacher layer,
 > provenance-aware dataset synthesis, constrained baseline compiler/evaluator, and the measurable
 > optimization core are implemented. Failure-directed training evidence and paired counterfactual
-> stability are included. The compiler can produce verified, immutable deployment artifacts with a
+> stability are included. Semantics-preserving input variations measure whether rephrasing changes
+> a program's decision. The compiler can produce verified, immutable deployment artifacts with a
 > self-contained inspection report.
 
 ## Why this shape
@@ -47,7 +48,8 @@ uv run pytest
 dependency order. It validates compatible phase outputs before resuming. Use `--budget quick` for a
 small structural search, `standard` for semantic rewrites and a broader search, or `deep` for the
 largest built-in evidence and search budget. Every preset enforces hard ceilings for measured
-candidates and uncached TypeSafe requests.
+candidates and uncached TypeSafe requests. Standard and deep builds add semantics-preserving
+parent/variant pairs; resume rejects an older dataset when that evidence budget does not match.
 
 `--adaptive-cases N` adds one bounded improvement round after the initial optimization. The selected
 program is evaluated on training data, failures drive `N` new train-only cases, the baseline is
@@ -59,7 +61,8 @@ and resulting corpus hash still match.
 Each phase is also available independently:
 
 ```bash
-uv run jevcompiler dataset build examples/support-routing/task.yaml --normal 8 --boundary 4
+uv run jevcompiler dataset build examples/support-routing/task.yaml \
+  --normal 8 --boundary 4 --semantic-variation 4
 uv run jevcompiler baseline build \
   examples/support-routing/task.yaml \
   .jevcompiler/artifacts/support-router/dataset
@@ -113,7 +116,8 @@ teacher policy. A rewrite cannot add actions or arbitrary code.
 Optimization uses the development split for selection, then measures the fixed baseline and selected
 program on the untouched test split. Frozen manifests bind those held-out results to the exact test
 cases by digest. The self-contained report shows baseline/final comparisons, accuracy by generation,
-paired counterfactual stability, the Pareto trade-off, candidate lineage, and failure evidence.
+paired counterfactual stability, semantic invariance under rephrasing, the Pareto trade-off,
+candidate lineage, and failure evidence.
 
 ## Repository map
 

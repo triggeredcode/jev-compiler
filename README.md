@@ -8,8 +8,9 @@ a generic prompt optimizer, a hosted service, or a model-training/distillation s
 
 > Status: the foundation, typed DSL, safe runtime, TypeSafe boundary, structured teacher layer,
 > provenance-aware dataset synthesis, constrained baseline compiler/evaluator, and the measurable
-> optimization core are implemented. The compiler can produce verified, immutable deployment
-> artifacts with a self-contained inspection report.
+> optimization core are implemented. Failure-directed training evidence and paired counterfactual
+> stability are included. The compiler can produce verified, immutable deployment artifacts with a
+> self-contained inspection report.
 
 ## Why this shape
 
@@ -61,6 +62,20 @@ uv run jevcompiler artifact freeze \
   .jevcompiler/artifacts/support-router/dataset
 ```
 
+After an optimization run, generate new training evidence from its selected failure corpus:
+
+```bash
+uv run jevcompiler dataset adapt \
+  examples/support-routing/task.yaml \
+  .jevcompiler/artifacts/support-router/dataset \
+  .jevcompiler/artifacts/support-router/optimization/selected-failures/failures.json \
+  --output .jevcompiler/artifacts/support-router/adaptive-dataset
+```
+
+Adaptive generation accepts failures from the training split only. Every new case cites its source
+failure, duplicate states are rejected, and the existing development and test splits remain
+unchanged. Use the resulting dataset in the next baseline and optimization cycle.
+
 For a live Jev call, export `TYPESAFE_API_KEY` and omit `--answers`. Supply every credential through
 the process environment and never commit local key files or generated provider recordings.
 
@@ -89,7 +104,7 @@ teacher policy. A rewrite cannot add actions or arbitrary code.
 Optimization uses the development split for selection, then measures the fixed baseline and selected
 program on the untouched test split. Frozen manifests bind those held-out results to the exact test
 cases by digest. The self-contained report shows baseline/final comparisons, accuracy by generation,
-the Pareto trade-off, candidate lineage, and failure evidence.
+paired counterfactual stability, the Pareto trade-off, candidate lineage, and failure evidence.
 
 ## Repository map
 

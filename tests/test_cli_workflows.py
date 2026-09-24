@@ -35,6 +35,14 @@ def test_dataset_build_help_exposes_paid_guard() -> None:
     assert "--allow-paid" in result.output
 
 
+def test_dataset_adapt_help_requires_failure_evidence_and_paid_guard() -> None:
+    result = CliRunner().invoke(app, ["dataset", "adapt", "--help"])
+
+    assert result.exit_code == 0
+    assert "failures_path" in result.output
+    assert "--allow-paid" in result.output
+
+
 def test_baseline_build_help_requires_dataset_path() -> None:
     result = CliRunner().invoke(app, ["baseline", "build", "--help"])
 

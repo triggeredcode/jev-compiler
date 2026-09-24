@@ -20,6 +20,7 @@ from jevcompiler.optimizer.mutations import (
     set_confidence_threshold,
 )
 from jevcompiler.providers.base import SystemOneProvider
+from jevcompiler.providers.cache import CacheMissError
 from jevcompiler.specs.program import BranchNode, DecisionProgram, JevNode
 
 
@@ -116,7 +117,11 @@ def pareto_frontier(records: Sequence[CandidateRecord]) -> list[str]:
 class Optimizer:
     def __init__(self, provider: SystemOneProvider, *, concurrency: int = 10) -> None:
         self.provider = provider
-        self.evaluator = BaselineEvaluator(provider, concurrency=concurrency)
+        self.evaluator = BaselineEvaluator(
+            provider,
+            concurrency=concurrency,
+            fatal_errors=(CacheMissError,),
+        )
 
     async def optimize(
         self,

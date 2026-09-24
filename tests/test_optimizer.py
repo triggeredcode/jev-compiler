@@ -1,15 +1,23 @@
 import asyncio
 from datetime import UTC, datetime
 
+import pytest
+
 from jevcompiler.dataset.models import CaseProvenance, DatasetCase, LabelMetadata
 from jevcompiler.optimizer import (
     Optimizer,
     add_choice_early_exit,
     confidence_dimensions,
     rewrite_choice_question,
+    write_optimization,
 )
 from jevcompiler.providers.base import SystemOneResult
-from jevcompiler.providers.cache import CachingSystemOneProvider, JevCache
+from jevcompiler.providers.cache import (
+    CacheMissError,
+    CacheMode,
+    CachingSystemOneProvider,
+    JevCache,
+)
 from jevcompiler.specs.program import (
     BranchNode,
     BranchRule,
@@ -150,6 +158,12 @@ def test_threshold_search_reuses_cache_and_improves_selection(tmp_path) -> None:
     assert result.live_calls == 3
     assert result.cache_hits == 6
 
+    output = tmp_path / "optimization"
+    write_optimization(result, output)
+    assert (output / "selected-program.yaml").exists()
+    assert (output / "lineage.json").exists()
+    assert (output / "baseline-failures" / "failures.jsonl").exists()
+
 
 def test_structured_question_and_early_exit_mutations_are_valid() -> None:
     program = _program()
@@ -178,3 +192,11 @@ def test_structured_question_and_early_exit_mutations_are_valid() -> None:
     assert rewrite.program != program
     assert len(early_exit.program.stages) == len(program.stages) + 1
     assert early_exit.program.stages[1].type == "branch"
+
+
+def test_replay_only_optimization_fails_closed_on_missing_evidence(tmp_path) -> None:
+    case = _case(1, "billing", 0.9, "billing")
+    with JevCache(tmp_path / "empty.sqlite3") as cache:
+        provider = CachingSystemOneProvider(cache, mode=CacheMode.replay_only)
+        with pytest.raises(CacheMissError):
+            asyncio.run(Optimizer(provider).optimize(_program(), [case]))

@@ -43,10 +43,11 @@ class BudgetSettings:
     counterfactual: int
     thresholds: tuple[float, ...]
     semantic: bool
+    max_live_calls: int
 
 
 BUDGETS = {
-    BuildBudget.quick: BudgetSettings(4, 2, 1, 1, (0.5, 0.65, 0.8), False),
+    BuildBudget.quick: BudgetSettings(4, 2, 1, 1, (0.5, 0.65, 0.8), False, 50),
     BuildBudget.standard: BudgetSettings(
         8,
         4,
@@ -54,6 +55,7 @@ BUDGETS = {
         4,
         (0.5, 0.6, 0.7, 0.8, 0.9),
         True,
+        250,
     ),
     BuildBudget.deep: BudgetSettings(
         20,
@@ -62,6 +64,7 @@ BUDGETS = {
         10,
         (0.4, 0.5, 0.6, 0.7, 0.8, 0.9),
         True,
+        1000,
     ),
 }
 
@@ -161,6 +164,7 @@ async def _build_all(
             task_path=task_path,
             teacher_override=teacher_override,
             allow_paid=allow_paid,
+            max_live_calls=settings.max_live_calls,
         )
         completed.append("optimization")
     else:

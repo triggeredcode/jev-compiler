@@ -9,7 +9,12 @@ from pydantic import ValidationError
 from rich.console import Console
 
 from jevcompiler.dataset import DatasetBuildError, read_dataset
-from jevcompiler.freeze import ArtifactError, freeze_optimization, verify_artifact
+from jevcompiler.freeze import (
+    ArtifactError,
+    freeze_optimization,
+    frozen_artifact_id,
+    verify_artifact,
+)
 from jevcompiler.optimizer.models import OptimizationResult
 from jevcompiler.paths import artifact_directory
 
@@ -42,7 +47,7 @@ def freeze_artifact(
         )
         destination = output or (
             artifact_directory(selected.program.name, "frozen")
-            / result.selected_candidate_id
+            / frozen_artifact_id(result)
         )
         manifest = freeze_optimization(result, dataset, destination)
     except (

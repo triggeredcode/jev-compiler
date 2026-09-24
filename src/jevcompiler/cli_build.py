@@ -15,7 +15,12 @@ from jevcompiler.cli_baseline import _build_baseline
 from jevcompiler.cli_dataset import _build_dataset
 from jevcompiler.cli_optimize import SplitName, _run_optimization
 from jevcompiler.dataset import DatasetBuildError, read_dataset
-from jevcompiler.freeze import ArtifactError, freeze_optimization, verify_artifact
+from jevcompiler.freeze import (
+    ArtifactError,
+    freeze_optimization,
+    frozen_artifact_id,
+    verify_artifact,
+)
 from jevcompiler.optimizer import ProposalError, program_id
 from jevcompiler.optimizer.models import OptimizationResult
 from jevcompiler.paths import DEFAULT_CACHE_PATH, artifact_directory
@@ -176,12 +181,14 @@ async def _build_all(
 
     frozen_dir = (
         artifact_directory(task.name, "frozen")
-        / optimization.selected_candidate_id
+        / frozen_artifact_id(optimization)
     )
     if (frozen_dir / "manifest.json").exists():
         manifest = verify_artifact(frozen_dir)
         if manifest.corpus_hash != dataset.manifest.corpus_hash:
             raise ArtifactError("existing frozen artifact uses a different corpus")
+        if manifest.selected_candidate_id != optimization.selected_candidate_id:
+            raise ArtifactError("existing frozen artifact uses a different candidate")
         completed.append("artifact (verified existing)")
     else:
         freeze_optimization(optimization, dataset, frozen_dir)

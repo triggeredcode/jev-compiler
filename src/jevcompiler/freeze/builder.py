@@ -73,6 +73,19 @@ def freeze_optimization(
         raise ArtifactError("selected candidate is missing its program or measurements")
     if dataset.manifest.task_name != selected.program.name:
         raise ArtifactError("dataset and selected program names do not match")
+    if dataset.test and result.held_out is None:
+        raise ArtifactError("held-out test evaluation is required before freezing")
+    if result.held_out is not None:
+        held_out_digest = content_digest(
+            [case.model_dump(mode="json") for case in dataset.test]
+        )
+        if result.held_out.digest != held_out_digest:
+            raise ArtifactError("held-out evaluation digest does not match the test split")
+        if (
+            result.held_out.baseline_candidate_id != result.baseline_candidate_id
+            or result.held_out.selected_candidate_id != result.selected_candidate_id
+        ):
+            raise ArtifactError("held-out evaluation does not match the frozen selection")
 
     output.mkdir(parents=True)
     program_data = selected.program.model_dump(
@@ -85,6 +98,8 @@ def freeze_optimization(
         encoding="utf-8",
     )
     _write_json(output / "metrics.json", selected.evaluation.model_dump(mode="json"))
+    if result.held_out is not None:
+        _write_json(output / "held-out.json", result.held_out.model_dump(mode="json"))
     _write_json(
         output / "lineage.json",
         [
@@ -104,6 +119,10 @@ def freeze_optimization(
             "hypothesis": selected.hypothesis,
             "semantic_diff": selected.semantic_diff,
             "pareto_frontier": result.pareto_frontier,
+            "selection_digest": result.selection_digest,
+            "held_out_digest": (
+                result.held_out.digest if result.held_out is not None else None
+            ),
             "cache": {
                 "hits": result.cache_hits,
                 "misses": result.cache_misses,
@@ -118,6 +137,15 @@ def freeze_optimization(
     payload_files = sorted(path for path in output.iterdir() if path.is_file())
     file_hashes = {path.name: _sha256(path) for path in payload_files}
     metrics = selected.metrics.model_dump(mode="json")
+    held_out_metrics = None
+    if result.held_out is not None:
+        held_out_metrics = {
+            "baseline_accuracy": result.held_out.baseline_metrics.accuracy,
+            "baseline_macro_f1": result.held_out.baseline_metrics.macro_f1,
+            "selected_accuracy": result.held_out.selected_metrics.accuracy,
+            "selected_macro_f1": result.held_out.selected_metrics.macro_f1,
+            "selected_jev_calls": result.held_out.selected_metrics.jev_calls,
+        }
     manifest = FrozenManifest(
         task_name=selected.program.name,
         created_at=datetime.now(UTC),
@@ -134,6 +162,7 @@ def freeze_optimization(
             "question_tokens": metrics["question_tokens"],
             "graph_complexity": metrics["graph_complexity"],
         },
+        held_out_metrics=held_out_metrics,
         files=file_hashes,
     )
     (output / "manifest.json").write_text(manifest.model_dump_json(indent=2), encoding="utf-8")

@@ -15,6 +15,11 @@ def _metric(candidate: CandidateRecord, name: str) -> str:
 
 
 def render_report(result: OptimizationResult) -> str:
+    baseline = next(
+        candidate
+        for candidate in result.candidates
+        if candidate.candidate_id == result.baseline_candidate_id
+    )
     selected = next(
         candidate
         for candidate in result.candidates
@@ -54,6 +59,16 @@ def render_report(result: OptimizationResult) -> str:
         )
         for cluster in result.selected_failures.clusters
     ) or '<tr><td colspan="3">No selected-candidate failures.</td></tr>'
+    if result.held_out is None:
+        held_out_baseline = "—"
+        held_out_selected = "—"
+        held_out_note = "Held-out test evaluation was unavailable."
+    else:
+        held_out_baseline = f"{result.held_out.baseline_metrics.accuracy:.3f}"
+        held_out_selected = f"{result.held_out.selected_metrics.accuracy:.3f}"
+        held_out_note = (
+            f"Measured on {result.held_out.selected_evaluation.total} untouched test cases."
+        )
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -91,6 +106,23 @@ def render_report(result: OptimizationResult) -> str:
     <div class="card"><strong>{_metric(selected, 'jev_calls')}</strong>Jev calls</div>
     <div class="card"><strong>{result.cache_hits}</strong>cache hits</div>
   </section>
+  <h2>Baseline vs selected</h2>
+  <table>
+    <thead><tr><th>Evidence</th><th>Baseline accuracy</th><th>Selected accuracy</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Selection split</td>
+        <td>{_metric(baseline, 'accuracy')}</td>
+        <td>{_metric(selected, 'accuracy')}</td>
+      </tr>
+      <tr>
+        <td>Held-out test</td>
+        <td>{held_out_baseline}</td>
+        <td>{held_out_selected}</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>{escape(held_out_note)}</p>
   <h2>Decision graph</h2>
   <div class="graph">{stages}</div>
   <h2>Candidate lineage</h2>

@@ -35,9 +35,15 @@ def _report(*predictions: tuple[str, str | None]) -> EvaluationReport:
 def test_counterfactual_stability_scores_expected_prediction_relationships() -> None:
     cases = [
         _case("parent", "billing"),
-        _case("same", "billing", "parent"),
-        _case("changed", "technical", "parent"),
-        _case("missing", "technical", "parent"),
+        _case("same", "billing", "parent").model_copy(
+            update={"bucket": "counterfactual"}
+        ),
+        _case("changed", "technical", "parent").model_copy(
+            update={"bucket": "counterfactual"}
+        ),
+        _case("missing", "technical", "parent").model_copy(
+            update={"bucket": "counterfactual"}
+        ),
     ]
     report = _report(
         ("parent", "billing"),
@@ -55,7 +61,26 @@ def test_counterfactual_stability_scores_expected_prediction_relationships() -> 
 def test_counterfactual_stability_is_unavailable_without_complete_pairs() -> None:
     score, pairs = counterfactual_stability(
         _report(("orphan", "billing")),
-        [_case("orphan", "billing", "outside-split")],
+        [
+            _case("orphan", "billing", "outside-split").model_copy(
+                update={"bucket": "counterfactual"}
+            )
+        ],
+    )
+
+    assert score is None
+    assert pairs == 0
+
+
+def test_counterfactual_stability_ignores_semantic_variations() -> None:
+    parent = _case("parent", "billing")
+    variation = _case("variant", "billing", "parent").model_copy(
+        update={"bucket": "semantic_variation"}
+    )
+
+    score, pairs = counterfactual_stability(
+        _report(("parent", "billing"), ("variant", "technical")),
+        [parent, variation],
     )
 
     assert score is None

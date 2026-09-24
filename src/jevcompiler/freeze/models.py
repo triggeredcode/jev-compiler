@@ -19,4 +19,5 @@ class FrozenManifest(BaseModel):
     jev_model: str
     actions: list[str]
     selection_metrics: dict[str, float | int]
+    held_out_metrics: dict[str, float | int] | None = None
     files: dict[str, str]

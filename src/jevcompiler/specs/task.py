@@ -46,6 +46,7 @@ class TaskSpec(StrictModel):
     state: StateSpec
     actions: list[str] = Field(min_length=2)
     policy: list[str] = Field(min_length=1)
+    examples: list[dict[str, Any]] = Field(default_factory=list)
     objectives: ObjectiveSpec = Field(default_factory=ObjectiveSpec)
     constraints: TaskConstraints = Field(default_factory=TaskConstraints)
     teacher: TeacherConfig = Field(default_factory=TeacherConfig)
@@ -61,4 +62,3 @@ class TaskSpec(StrictModel):
 
 def load_task(path: str | Path) -> TaskSpec:
     return TaskSpec.model_validate(load_yaml_mapping(path))
-

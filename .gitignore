@@ -16,7 +16,5 @@ build/
 !.env.example
 keys.env
 spec.md
-
-# Private source material may be split into the committed docs/spec/ set,
-# but the local originals and credentials never enter Git.
+docs/
 private-specs/

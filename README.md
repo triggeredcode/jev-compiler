@@ -41,8 +41,8 @@ uv run jevcompiler optimize run \
 uv run pytest
 ```
 
-For a live Jev call, export `TYPESAFE_API_KEY` and omit `--answers`. Credentials are read only from
-the process environment. The repository intentionally ignores `keys.env` and `.env`.
+For a live Jev call, export `TYPESAFE_API_KEY` and omit `--answers`. Supply every credential through
+the process environment and never commit local key files or generated provider recordings.
 
 ## Teacher selection policy
 
@@ -72,9 +72,6 @@ teacher policy. A rewrite cannot add actions or arbitrary code.
 - `src/jevcompiler/baseline`: constrained compilation and trace-rich evaluation
 - `src/jevcompiler/optimizer`: cache/replay, failure evidence, mutations, lineage, and Pareto search
 - `src/jevcompiler/security.py`: log-safe secret redaction
-- `docs/spec/`: progressive specification from big picture to concrete delivery slices
-- `docs/IMPLEMENTATION_PLAN.md`: dependency-aware execution tracker
-- `docs/JEVHARNESS_LESSONS.md`: lessons adopted from JevHarness and deliberate differences
 - `examples/support-routing`: runnable offline example
 
 ## Security and terms
@@ -91,5 +88,6 @@ outputs. Users remain responsible for complying with provider terms. See [SECURI
 - [TypeSafe primitives](https://docs.typesafe.ai/primitives)
 - [TypeSafe cookbooks](https://docs.typesafe.ai/cookbooks)
 - [TypeSafe models](https://docs.typesafe.ai/models)
+- [JevHarness](https://github.com/TianyuCodings/JevHarness)
 
 Licensed under the MIT License.

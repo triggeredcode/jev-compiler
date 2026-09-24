@@ -48,3 +48,47 @@ def test_program_rejects_unknown_next_stage() -> None:
             }
         )
 
+
+def test_program_rejects_duplicate_question_ids_across_stages() -> None:
+    with pytest.raises(ValidationError, match="question ids must be unique"):
+        DecisionProgram.model_validate(
+            {
+                "name": "bad-questions",
+                "actions": ["yes"],
+                "stages": [
+                    {
+                        "id": "first",
+                        "type": "jev",
+                        "questions": {
+                            "ready": {"type": "noul", "instructions": "Ready?"}
+                        },
+                    },
+                    {
+                        "id": "second",
+                        "type": "jev",
+                        "questions": {
+                            "ready": {"type": "noul", "instructions": "Still ready?"}
+                        },
+                    },
+                ],
+            }
+        )
+
+
+def test_program_rejects_question_ids_that_cannot_be_expression_variables() -> None:
+    with pytest.raises(ValidationError, match="expression-safe identifiers"):
+        DecisionProgram.model_validate(
+            {
+                "name": "bad-question-name",
+                "actions": ["yes"],
+                "stages": [
+                    {
+                        "id": "judge",
+                        "type": "jev",
+                        "questions": {
+                            "not-valid": {"type": "noul", "instructions": "Ready?"}
+                        },
+                    }
+                ],
+            }
+        )

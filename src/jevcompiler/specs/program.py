@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from jevcompiler.specs.common import load_yaml_mapping
+
+_IDENTIFIER = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
 class StrictModel(BaseModel):
@@ -82,6 +85,21 @@ class DecisionProgram(StrictModel):
         action_set = set(self.actions)
         if len(action_set) != len(self.actions):
             raise ValueError("actions must be unique")
+        question_ids = [
+            question_id
+            for node in self.stages
+            if isinstance(node, JevNode)
+            for question_id in node.questions
+        ]
+        invalid_question_ids = sorted(
+            question_id for question_id in question_ids if not _IDENTIFIER.fullmatch(question_id)
+        )
+        if invalid_question_ids:
+            raise ValueError(
+                f"question ids must be expression-safe identifiers: {invalid_question_ids}"
+            )
+        if len(question_ids) != len(set(question_ids)):
+            raise ValueError("question ids must be unique across Jev stages")
         for node in self.stages:
             next_id = getattr(node, "next", None)
             if next_id is not None and next_id not in known:
@@ -100,4 +118,3 @@ class DecisionProgram(StrictModel):
 
 def load_program(path: str | Path) -> DecisionProgram:
     return DecisionProgram.model_validate(load_yaml_mapping(path))
-

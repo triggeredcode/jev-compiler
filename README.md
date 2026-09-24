@@ -34,10 +34,10 @@ uv run jevcompiler run examples/support-routing/program.yaml \
 uv run jevcompiler dataset build examples/support-routing/task.yaml --normal 8 --boundary 4
 uv run jevcompiler baseline build \
   examples/support-routing/task.yaml \
-  dist/support-router/dataset
+  .jevcompiler/artifacts/support-router/dataset
 uv run jevcompiler optimize run \
-  dist/support-router/baseline/program.yaml \
-  dist/support-router/dataset
+  .jevcompiler/artifacts/support-router/baseline/program.yaml \
+  .jevcompiler/artifacts/support-router/dataset
 uv run pytest
 ```
 
@@ -58,8 +58,10 @@ commands use this order automatically. A paid model requires both a non-free mod
 `--allow-paid`; it is never selected implicitly. Provider selection for the teacher and TypeSafe's
 Jev execution are separate concerns.
 
-Optimization records TypeSafe responses in `.jevcompiler/jev-cache.sqlite3`, then reuses the exact
-same evidence for threshold candidates. Use `--cache-mode replay_only` for a fully offline rerun.
+All generated datasets, programs, metrics, lineage, and failure evidence live under
+`.jevcompiler/artifacts/<task>/`. TypeSafe recordings live under `.jevcompiler/cache/`, and the
+entire workspace is excluded from version control. Use `--cache-mode replay_only` for a fully
+offline rerun.
 Add `--semantic --task <task.yaml>` to request bounded question rewrites through the same local-first
 teacher policy. A rewrite cannot add actions or arbitrary code.
 

@@ -10,6 +10,7 @@ from rich.console import Console
 
 from jevcompiler.cli_common import teacher_config_for
 from jevcompiler.dataset import DatasetBuilder, DatasetBuildError, write_dataset
+from jevcompiler.paths import artifact_directory
 from jevcompiler.providers.teacher import TeacherError, resolve_teacher
 from jevcompiler.specs import load_task
 from jevcompiler.specs.common import SpecLoadError
@@ -32,7 +33,7 @@ async def _build_dataset(
     task = load_task(task_path)
     config = teacher_config_for(task, teacher_override, allow_paid=allow_paid)
     teacher = await resolve_teacher(config)
-    destination = output or Path("dist") / task.name / "dataset"
+    destination = output or artifact_directory(task.name, "dataset")
     try:
         bundle = await DatasetBuilder(teacher).build(
             task,

@@ -17,6 +17,7 @@ from jevcompiler.baseline import (
 )
 from jevcompiler.cli_common import teacher_config_for
 from jevcompiler.dataset import DatasetBuildError, read_dataset
+from jevcompiler.paths import artifact_directory
 from jevcompiler.providers.teacher import TeacherError, resolve_teacher
 from jevcompiler.providers.typesafe import TypeSafeError, TypeSafeProvider
 from jevcompiler.specs import load_program, load_task
@@ -47,7 +48,7 @@ async def _build_baseline(
         )
     config = teacher_config_for(task, teacher_override, allow_paid=allow_paid)
     teacher = await resolve_teacher(config)
-    destination = output or Path("dist") / task.name / "baseline"
+    destination = output or artifact_directory(task.name, "baseline")
     try:
         artifact = await BaselineCompiler(teacher).compile(task, dataset)
         write_baseline(artifact, destination)

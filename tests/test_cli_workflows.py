@@ -2,6 +2,7 @@ from typer.testing import CliRunner
 
 from jevcompiler.cli import app
 from jevcompiler.cli_common import teacher_config_for
+from jevcompiler.cli_optimize import parse_thresholds
 from jevcompiler.specs.task import TaskSpec
 
 
@@ -38,3 +39,16 @@ def test_baseline_build_help_requires_dataset_path() -> None:
 
     assert result.exit_code == 0
     assert "DATASET_PATH" in result.output
+
+
+def test_optimize_help_exposes_cache_and_semantic_controls() -> None:
+    result = CliRunner().invoke(app, ["optimize", "run", "--help"])
+
+    assert result.exit_code == 0
+    assert "--cache-mode" in result.output
+    assert "--semantic" in result.output
+    assert "--allow-paid" in result.output
+
+
+def test_threshold_parser_deduplicates_and_validates() -> None:
+    assert parse_thresholds("0.7,0.5,0.7") == [0.5, 0.7]

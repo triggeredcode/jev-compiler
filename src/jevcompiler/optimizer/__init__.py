@@ -16,6 +16,7 @@ from jevcompiler.optimizer.mutations import (
     rewrite_choice_question,
     set_confidence_threshold,
 )
+from jevcompiler.optimizer.proposals import ProposalError, propose_question_rewrites
 from jevcompiler.optimizer.search import Optimizer, candidate_metrics, pareto_frontier
 
 __all__ = [
@@ -28,12 +29,14 @@ __all__ = [
     "MutationError",
     "OptimizationResult",
     "Optimizer",
+    "ProposalError",
     "add_choice_early_exit",
     "build_failure_corpus",
     "candidate_metrics",
     "confidence_dimensions",
     "pareto_frontier",
     "program_id",
+    "propose_question_rewrites",
     "rewrite_choice_question",
     "set_confidence_threshold",
     "write_failure_corpus",

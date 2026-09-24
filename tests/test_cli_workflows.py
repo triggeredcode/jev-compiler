@@ -78,6 +78,7 @@ def test_build_command_exposes_budgets_and_resume() -> None:
     assert result.exit_code == 0
     assert "quick" in result.output
     assert "--resume" in result.output
+    assert "--adaptive-cases" in result.output
     assert BUDGETS[BuildBudget.quick].semantic is False
     assert BUDGETS[BuildBudget.standard].semantic is True
     assert BUDGETS[BuildBudget.quick].max_live_calls < BUDGETS[BuildBudget.deep].max_live_calls

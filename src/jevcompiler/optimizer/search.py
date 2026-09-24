@@ -11,6 +11,7 @@ from jevcompiler.optimizer.failures import build_failure_corpus
 from jevcompiler.optimizer.models import (
     CandidateMetrics,
     CandidateRecord,
+    FailureCorpus,
     HeldOutEvaluation,
     OptimizationResult,
     SearchSummary,
@@ -252,6 +253,15 @@ class Optimizer:
                 stop_reason=("candidate_budget" if budget_exhausted else "search_exhausted"),
             ),
         )
+
+    async def evaluate_failures(
+        self,
+        program: DecisionProgram,
+        cases: list[DatasetCase],
+    ) -> FailureCorpus:
+        """Evaluate a fixed program and retain only trace-rich failure evidence."""
+        report = await self.evaluator.evaluate(program, cases=cases)
+        return build_failure_corpus(report, cases)
 
     async def evaluate_held_out(
         self,

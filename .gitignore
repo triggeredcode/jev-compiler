@@ -1,20 +1,31 @@
+# Private inputs and project-local runtime data
+.jevcompiler/
+docs/
+private-specs/
+spec.md
+keys.env
+*.env
+!.env.example
+
+# Python environments and bytecode
 .venv/
 __pycache__/
 *.py[cod]
+
+# Test, lint, and coverage output
 .pytest_cache/
 .ruff_cache/
 .coverage
 htmlcov/
-dist/
+
+# Package build output
 build/
+dist/
 *.egg-info/
-.jevcompiler/
+
+# Local indexing state
 .docdex/
 .docdex-state/
+
+# Operating-system metadata
 .DS_Store
-*.env
-!.env.example
-keys.env
-spec.md
-docs/
-private-specs/

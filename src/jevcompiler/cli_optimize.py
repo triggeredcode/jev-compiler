@@ -14,6 +14,7 @@ from jevcompiler.dataset import DatasetBuildError, read_dataset
 from jevcompiler.optimizer import Optimizer, ProposalError, propose_question_rewrites
 from jevcompiler.optimizer.artifacts import write_optimization
 from jevcompiler.optimizer.models import OptimizationResult
+from jevcompiler.paths import DEFAULT_CACHE_PATH, artifact_directory
 from jevcompiler.providers.cache import (
     CacheError,
     CacheMode,
@@ -108,7 +109,7 @@ async def _run_optimization(
     allow_paid: bool,
 ) -> tuple[OptimizationResult, Path]:
     program = load_program(program_path)
-    destination = output or Path("dist") / program.name / "optimization"
+    destination = output or artifact_directory(program.name, "optimization")
     with JevCache(cache_path) as cache:
         if cache_mode is CacheMode.replay_only:
             provider = CachingSystemOneProvider(cache, mode=cache_mode)
@@ -153,7 +154,7 @@ def optimize_run(
     dataset_path: Annotated[Path, typer.Argument(exists=True, file_okay=False, readable=True)],
     output: Annotated[Path | None, typer.Option("--output", "-o")] = None,
     split: Annotated[SplitName, typer.Option()] = SplitName.dev,
-    cache_path: Annotated[Path, typer.Option()] = Path(".jevcompiler/jev-cache.sqlite3"),
+    cache_path: Annotated[Path, typer.Option()] = DEFAULT_CACHE_PATH,
     cache_mode: Annotated[CacheMode, typer.Option()] = CacheMode.read_write,
     thresholds: Annotated[str, typer.Option()] = "0.5,0.6,0.7,0.8,0.9",
     concurrency: Annotated[int, typer.Option(min=1, max=100)] = 10,

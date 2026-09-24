@@ -52,3 +52,12 @@ def test_optimize_help_exposes_cache_and_semantic_controls() -> None:
 
 def test_threshold_parser_deduplicates_and_validates() -> None:
     assert parse_thresholds("0.7,0.5,0.7") == [0.5, 0.7]
+
+
+def test_artifact_commands_are_exposed() -> None:
+    freeze_help = CliRunner().invoke(app, ["artifact", "freeze", "--help"])
+    verify_help = CliRunner().invoke(app, ["artifact", "verify", "--help"])
+
+    assert freeze_help.exit_code == 0
+    assert verify_help.exit_code == 0
+    assert "OPTIMIZATION_PATH" in freeze_help.output.upper()

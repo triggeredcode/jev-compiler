@@ -1,4 +1,9 @@
-from jevcompiler.dataset.builder import DatasetBuilder, DatasetBuildError, write_dataset
+from jevcompiler.dataset.builder import (
+    DatasetBuilder,
+    DatasetBuildError,
+    read_dataset,
+    write_dataset,
+)
 from jevcompiler.dataset.models import DatasetBundle, DatasetCase, DatasetManifest
 
 __all__ = [
@@ -7,5 +12,6 @@ __all__ = [
     "DatasetBundle",
     "DatasetCase",
     "DatasetManifest",
+    "read_dataset",
     "write_dataset",
 ]

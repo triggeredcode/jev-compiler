@@ -330,3 +330,24 @@ def write_dataset(bundle: DatasetBundle, output: Path) -> DatasetManifest:
         bundle.manifest.model_dump_json(indent=2), encoding="utf-8"
     )
     return bundle.manifest
+
+
+def read_dataset(source: Path) -> DatasetBundle:
+    try:
+        manifest = DatasetManifest.model_validate_json(
+            (source / "manifest.json").read_text(encoding="utf-8")
+        )
+        splits: dict[str, list[DatasetCase]] = {}
+        for name in ("train", "dev", "test"):
+            lines = (source / f"{name}.jsonl").read_text(encoding="utf-8").splitlines()
+            splits[name] = [DatasetCase.model_validate_json(line) for line in lines if line]
+    except (OSError, ValueError) as exc:
+        raise DatasetBuildError(f"unable to read dataset at {source}: {exc}") from None
+    bundle = DatasetBundle(manifest=manifest, **splits)  # type: ignore[arg-type]
+    actual_hash = _corpus_hash(bundle.all_cases)
+    if actual_hash != manifest.corpus_hash:
+        raise DatasetBuildError("dataset corpus hash does not match its manifest")
+    actual_counts = {"train": len(bundle.train), "dev": len(bundle.dev), "test": len(bundle.test)}
+    if actual_counts != manifest.counts:
+        raise DatasetBuildError("dataset split counts do not match its manifest")
+    return bundle

@@ -9,6 +9,9 @@ dist/
 build/
 *.egg-info/
 .jevcompiler/
+.docdex/
+.docdex-state/
+.DS_Store
 *.env
 !.env.example
 keys.env

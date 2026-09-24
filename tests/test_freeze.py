@@ -96,6 +96,9 @@ def test_frozen_artifact_is_complete_and_verifiable(tmp_path) -> None:
     assert manifest.created_at <= datetime.now(UTC)
     assert verify_artifact(root) == manifest
     assert (root / "runtime.py").exists()
+    report = (root / "report.html").read_text(encoding="utf-8")
+    assert "frozen-router optimization report" in report
+    assert "Candidate lineage" in report
 
 
 def test_verification_detects_tampering(tmp_path) -> None:

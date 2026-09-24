@@ -12,6 +12,7 @@ import yaml
 from jevcompiler import __version__
 from jevcompiler.dataset.models import DatasetBundle
 from jevcompiler.freeze.models import FrozenManifest
+from jevcompiler.freeze.report import render_report
 from jevcompiler.optimizer.models import OptimizationResult
 from jevcompiler.runs import content_digest
 
@@ -112,6 +113,7 @@ def freeze_optimization(
     )
     _write_json(output / "dataset-manifest.json", dataset.manifest.model_dump(mode="json"))
     (output / "runtime.py").write_text(_RUNTIME_SOURCE, encoding="utf-8")
+    (output / "report.html").write_text(render_report(result), encoding="utf-8")
 
     payload_files = sorted(path for path in output.iterdir() if path.is_file())
     file_hashes = {path.name: _sha256(path) for path in payload_files}

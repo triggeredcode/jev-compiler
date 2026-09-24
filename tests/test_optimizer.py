@@ -157,6 +157,7 @@ def test_threshold_search_reuses_cache_and_improves_selection(tmp_path) -> None:
     assert calls == 3
     assert result.live_calls == 3
     assert result.cache_hits == 6
+    assert result.selection_digest is not None
 
     output = tmp_path / "optimization"
     write_optimization(result, output)

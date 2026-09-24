@@ -21,6 +21,7 @@ from jevcompiler.optimizer.mutations import (
 )
 from jevcompiler.providers.base import SystemOneProvider
 from jevcompiler.providers.cache import CacheMissError
+from jevcompiler.runs import content_digest
 from jevcompiler.specs.program import BranchNode, DecisionProgram, JevNode
 
 
@@ -222,6 +223,9 @@ class Optimizer:
             cache_hits=stats.hits if stats else 0,
             cache_misses=stats.misses if stats else 0,
             live_calls=stats.live_calls if stats else 0,
+            selection_digest=content_digest(
+                [case.model_dump(mode="json") for case in cases]
+            ),
         )
 
     async def _evaluate(

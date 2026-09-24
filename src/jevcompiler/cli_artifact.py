@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import webbrowser
 from pathlib import Path
 from typing import Annotated
 
@@ -76,3 +77,26 @@ def verify_frozen_artifact(
         f"[green]Verified[/green] {manifest.task_name} "
         f"candidate={manifest.selected_candidate_id} files={len(manifest.files)}"
     )
+
+
+@app.command("report")
+def open_artifact_report(
+    artifact_path: Annotated[
+        Path,
+        typer.Argument(exists=True, file_okay=False, readable=True),
+    ],
+    open_browser: Annotated[
+        bool,
+        typer.Option("--open/--no-open", help="Open the verified report in a browser."),
+    ] = True,
+) -> None:
+    """Verify a frozen artifact and show its self-contained report."""
+    try:
+        verify_artifact(artifact_path)
+        report = (artifact_path / "report.html").resolve(strict=True)
+    except (ArtifactError, OSError) as exc:
+        console.print(f"[red]Artifact report failed:[/red] {exc}")
+        raise typer.Exit(1) from None
+    if open_browser and not webbrowser.open(report.as_uri()):
+        console.print("[yellow]Browser did not confirm that the report opened.[/yellow]")
+    console.print(f"Report: [green]{report}[/green]")

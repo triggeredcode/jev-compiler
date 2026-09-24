@@ -12,6 +12,7 @@ from rich.console import Console
 from rich.table import Table
 
 from jevcompiler.cli_artifact import app as artifact_app
+from jevcompiler.cli_artifact import open_artifact_report
 from jevcompiler.cli_baseline import app as baseline_app
 from jevcompiler.cli_build import build_project
 from jevcompiler.cli_dataset import app as dataset_app
@@ -30,6 +31,7 @@ app.add_typer(dataset_app, name="dataset", help="Build reproducible evaluation d
 app.add_typer(baseline_app, name="baseline", help="Compile and evaluate baseline programs.")
 app.add_typer(optimize_app, name="optimize", help="Optimize programs with cached evidence.")
 app.command("build")(build_project)
+app.command("report")(open_artifact_report)
 console = Console()
 
 

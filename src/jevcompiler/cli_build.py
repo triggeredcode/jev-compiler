@@ -100,6 +100,16 @@ BUDGETS = {
 }
 
 
+def _dataset_matches_build_settings(
+    dataset: DatasetBundle,
+    settings: BudgetSettings,
+) -> bool:
+    return (
+        dataset.manifest.bucket_counts.get("semantic_variation", 0)
+        == settings.semantic_variation
+    )
+
+
 def _split_digest(dataset_path: Path, split: str) -> str:
     dataset = read_dataset(dataset_path)
     cases = getattr(dataset, split)
@@ -191,10 +201,13 @@ async def _build_all(
     completed: list[str] = []
 
     dataset_dir = artifact_directory(task.name, "dataset")
+    dataset: DatasetBundle | None = None
     if resume and (dataset_dir / "manifest.json").exists():
-        dataset = read_dataset(dataset_dir)
-        completed.append("dataset (resumed)")
-    else:
+        candidate_dataset = read_dataset(dataset_dir)
+        if _dataset_matches_build_settings(candidate_dataset, settings):
+            dataset = candidate_dataset
+            completed.append("dataset (resumed)")
+    if dataset is None:
         await _build_dataset(
             task_path,
             dataset_dir,

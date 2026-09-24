@@ -1,9 +1,14 @@
 from typer.testing import CliRunner
 
 from jevcompiler.cli import app
-from jevcompiler.cli_build import BUDGETS, BuildBudget
+from jevcompiler.cli_build import (
+    BUDGETS,
+    BuildBudget,
+    _dataset_matches_build_settings,
+)
 from jevcompiler.cli_common import teacher_config_for
 from jevcompiler.cli_optimize import parse_thresholds
+from jevcompiler.dataset.models import DatasetBundle, DatasetManifest
 from jevcompiler.specs.task import TaskSpec
 
 
@@ -83,3 +88,14 @@ def test_build_command_exposes_budgets_and_resume() -> None:
     assert BUDGETS[BuildBudget.standard].semantic is True
     assert BUDGETS[BuildBudget.quick].max_live_calls < BUDGETS[BuildBudget.deep].max_live_calls
     assert BUDGETS[BuildBudget.quick].max_candidates < BUDGETS[BuildBudget.deep].max_candidates
+
+
+def test_build_resume_requires_matching_semantic_variation_budget() -> None:
+    dataset = DatasetBundle.model_construct(
+        manifest=DatasetManifest.model_construct(
+            bucket_counts={"semantic_variation": 4},
+        )
+    )
+
+    assert _dataset_matches_build_settings(dataset, BUDGETS[BuildBudget.standard])
+    assert not _dataset_matches_build_settings(dataset, BUDGETS[BuildBudget.quick])

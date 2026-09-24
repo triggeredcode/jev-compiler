@@ -303,6 +303,10 @@ class DatasetBuilder:
         variations: list[DatasetCase],
     ) -> None:
         expected_by_id = {case.id: case.expected_action for case in parents}
+        parent_ids = set(expected_by_id)
+        variation_ids = [case.id for case in variations]
+        if parent_ids.intersection(variation_ids) or len(set(variation_ids)) != len(variation_ids):
+            raise DatasetBuildError("semantic variations must contain distinct new states")
         changed = [
             case.id
             for case in variations

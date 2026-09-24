@@ -12,7 +12,12 @@ from jevcompiler.dataset.models import (
     DatasetManifest,
     LabelMetadata,
 )
-from jevcompiler.freeze import ArtifactError, freeze_optimization, verify_artifact
+from jevcompiler.freeze import (
+    ArtifactError,
+    freeze_optimization,
+    frozen_artifact_id,
+    verify_artifact,
+)
 from jevcompiler.optimizer.models import (
     CandidateMetrics,
     CandidateRecord,
@@ -194,3 +199,19 @@ def test_report_command_verifies_artifact_without_opening_browser(tmp_path) -> N
     assert completed.exit_code == 0
     assert "report.html" in completed.output
     assert root.name in completed.output
+
+
+def test_frozen_artifact_identity_includes_approval_evidence() -> None:
+    result, _ = _result()
+    original = frozen_artifact_id(result)
+    assert result.held_out is not None
+    changed = result.model_copy(
+        update={
+            "held_out": result.held_out.model_copy(
+                update={"digest": "b" * 64}
+            )
+        }
+    )
+
+    assert original.startswith(f"{result.selected_candidate_id}-")
+    assert frozen_artifact_id(changed) != original

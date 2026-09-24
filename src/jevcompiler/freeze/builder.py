@@ -54,6 +54,12 @@ def _write_json(path: Path, value: object) -> None:
     )
 
 
+def frozen_artifact_id(result: OptimizationResult) -> str:
+    """Identify a frozen program together with the evidence used to approve it."""
+    result_digest = content_digest(result.model_dump(mode="json"))[:12]
+    return f"{result.selected_candidate_id}-{result_digest}"
+
+
 def freeze_optimization(
     result: OptimizationResult,
     dataset: DatasetBundle,

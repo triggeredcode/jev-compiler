@@ -12,10 +12,14 @@ from jevcompiler.optimizer.mutations import (
     MutationCandidate,
     MutationError,
     add_choice_early_exit,
+    add_question,
     confidence_dimensions,
+    merge_choice_questions,
     program_id,
+    remove_question,
     rewrite_choice_question,
     set_confidence_threshold,
+    split_choice_question,
 )
 from jevcompiler.optimizer.proposals import ProposalError, propose_question_rewrites
 from jevcompiler.optimizer.search import Optimizer, candidate_metrics, pareto_frontier
@@ -32,14 +36,18 @@ __all__ = [
     "Optimizer",
     "ProposalError",
     "add_choice_early_exit",
+    "add_question",
     "build_failure_corpus",
     "candidate_metrics",
     "confidence_dimensions",
+    "merge_choice_questions",
     "pareto_frontier",
     "program_id",
     "propose_question_rewrites",
+    "remove_question",
     "rewrite_choice_question",
     "set_confidence_threshold",
+    "split_choice_question",
     "write_failure_corpus",
     "write_optimization",
 ]

@@ -7,10 +7,15 @@ from jevcompiler.dataset.models import CaseProvenance, DatasetCase, LabelMetadat
 from jevcompiler.optimizer import (
     Optimizer,
     add_choice_early_exit,
+    add_question,
     confidence_dimensions,
+    merge_choice_questions,
+    remove_question,
     rewrite_choice_question,
+    split_choice_question,
     write_optimization,
 )
+from jevcompiler.optimizer.mutations import MutationError
 from jevcompiler.providers.base import SystemOneResult
 from jevcompiler.providers.cache import (
     CacheMissError,
@@ -193,6 +198,110 @@ def test_structured_question_and_early_exit_mutations_are_valid() -> None:
     assert rewrite.program != program
     assert len(early_exit.program.stages) == len(program.stages) + 1
     assert early_exit.program.stages[1].type == "branch"
+
+
+def test_add_remove_split_and_merge_questions_preserve_valid_graphs() -> None:
+    program = _program()
+    extra = ChoiceQuestion(
+        type="choice",
+        instructions="Independently verify the route.",
+        criteria={
+            "billing": "Payment concern",
+            "technical": "Product concern",
+            "manual_review": "Unclear concern",
+        },
+    )
+    added = add_question(
+        program,
+        stage_id="classify",
+        question_id="route_check",
+        question=extra,
+        hypothesis="A second view may expose ambiguity.",
+    )
+    removed = remove_question(
+        added.program,
+        stage_id="classify",
+        question_id="route_check",
+        hypothesis="The verifier did not improve quality.",
+    )
+    split = split_choice_question(
+        program,
+        stage_id="classify",
+        question_id="route",
+        verifier_id="route_check",
+        verifier_instructions="Verify the primary route independently.",
+        hypothesis="Independent classification may expose ambiguity.",
+    )
+    merged = merge_choice_questions(
+        split.program,
+        stage_id="classify",
+        primary_id="route",
+        secondary_id="route_check",
+        instructions="Route and verify this ticket in one answer.",
+        hypothesis="One consolidated question may be sufficient.",
+    )
+
+    assert "route_check" in added.program.stages[0].questions
+    assert removed.program == program
+    assert split.program.stages[0].questions["route_check"].criteria == (
+        program.stages[0].questions["route"].criteria
+    )
+    assert "route_check" not in merged.program.stages[0].questions
+    assert merged.program.stages[0].questions["route"].instructions.startswith("Route")
+
+
+def test_question_mutations_fail_closed_on_duplicates_and_references() -> None:
+    program = _program()
+    extra = ChoiceQuestion(
+        type="choice",
+        instructions="Verify route.",
+        criteria={
+            "billing": "Payment",
+            "technical": "Product",
+            "manual_review": "Unclear",
+        },
+    )
+    with pytest.raises(MutationError, match="already exists"):
+        add_question(
+            program,
+            stage_id="classify",
+            question_id="route",
+            question=extra,
+            hypothesis="Invalid duplicate.",
+        )
+    with pytest.raises(MutationError, match="referenced question"):
+        remove_question(
+            program,
+            stage_id="classify",
+            question_id="route",
+            hypothesis="Invalid removal.",
+        )
+
+    split = split_choice_question(
+        program,
+        stage_id="classify",
+        question_id="route",
+        verifier_id="route_check",
+        verifier_instructions="Verify route.",
+        hypothesis="Add verifier.",
+    )
+    referenced_data = split.program.model_dump(mode="json", by_alias=True)
+    referenced_data["stages"][1]["rules"].append(
+        {
+            "when": "route_check.choice == 'billing'",
+            "return": "billing",
+        }
+    )
+    referenced = DecisionProgram.model_validate(referenced_data)
+    with pytest.raises(MutationError, match="cannot merge referenced"):
+        merge_choice_questions(
+            referenced,
+            stage_id="classify",
+            primary_id="route",
+            secondary_id="route_check",
+            instructions="Merge route checks.",
+            hypothesis="Invalid referenced merge.",
+        )
 
 
 def test_replay_only_optimization_fails_closed_on_missing_evidence(tmp_path) -> None:

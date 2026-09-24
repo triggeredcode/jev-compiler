@@ -147,6 +147,9 @@ def test_frozen_artifact_is_complete_and_verifiable(tmp_path) -> None:
     assert "Candidate lineage" in report
     assert "Baseline vs selected" in report
     assert "Held-out test" in report
+    assert "Accuracy by generation" in report
+    assert "Pareto trade-off" in report
+    assert "Failure browser" in report
 
 
 def test_verification_detects_tampering(tmp_path) -> None:

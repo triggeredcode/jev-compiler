@@ -348,6 +348,18 @@ def test_optimizer_records_counterfactual_stability(tmp_path) -> None:
     assert selected.metrics.counterfactual_stability == 1.0
 
 
+def test_optimizer_builds_training_failure_evidence_with_provenance() -> None:
+    case = _case(1, "billing", 0.4, "billing")
+
+    failures = asyncio.run(Optimizer(ConfidenceProvider()).evaluate_failures(_program(), [case]))
+
+    assert failures.total_evaluated == 1
+    assert failures.total_failures == 1
+    assert failures.cases[0].case_id == case.id
+    assert failures.cases[0].source_provenance == case.provenance
+    assert failures.cases[0].label_provenance == case.label
+
+
 def test_held_out_evaluation_preserves_selection_and_compares_baseline(tmp_path) -> None:
     selection = [
         _case(1, "billing", 0.9, "billing"),

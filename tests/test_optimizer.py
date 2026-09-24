@@ -200,3 +200,17 @@ def test_replay_only_optimization_fails_closed_on_missing_evidence(tmp_path) -> 
         provider = CachingSystemOneProvider(cache, mode=CacheMode.replay_only)
         with pytest.raises(CacheMissError):
             asyncio.run(Optimizer(provider).optimize(_program(), [case]))
+
+
+def test_equal_candidate_does_not_displace_baseline(tmp_path) -> None:
+    case = _case(1, "billing", 0.95, "billing")
+
+    async def exercise():
+        with JevCache(tmp_path / "jev.sqlite3") as cache:
+            provider = CachingSystemOneProvider(cache, ConfidenceProvider())
+            return await Optimizer(provider).optimize(
+                _program(), [case], thresholds=[0.5, 0.7, 0.9]
+            )
+
+    result = asyncio.run(exercise())
+    assert result.selected_candidate_id == result.baseline_candidate_id

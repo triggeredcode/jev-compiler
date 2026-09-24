@@ -7,8 +7,8 @@ The project is an **automatic compiler for Jev decision workflows**. It is not a
 a generic prompt optimizer, a hosted service, or a model-training/distillation system.
 
 > Status: the foundation, typed DSL, safe runtime, TypeSafe boundary, structured teacher layer,
-> provenance-aware dataset synthesis, and constrained baseline compiler/evaluator are implemented.
-> Threshold and semantic optimization are the next delivery slice.
+> provenance-aware dataset synthesis, constrained baseline compiler/evaluator, and the measurable
+> optimization core are implemented. Frozen artifacts and showcase reporting are the next slice.
 
 ## Why this shape
 
@@ -35,6 +35,9 @@ uv run jevcompiler dataset build examples/support-routing/task.yaml --normal 8 -
 uv run jevcompiler baseline build \
   examples/support-routing/task.yaml \
   dist/support-router/dataset
+uv run jevcompiler optimize run \
+  dist/support-router/baseline/program.yaml \
+  dist/support-router/dataset
 uv run pytest
 ```
 
@@ -55,6 +58,11 @@ commands use this order automatically. A paid model requires both a non-free mod
 `--allow-paid`; it is never selected implicitly. Provider selection for the teacher and TypeSafe's
 Jev execution are separate concerns.
 
+Optimization records TypeSafe responses in `.jevcompiler/jev-cache.sqlite3`, then reuses the exact
+same evidence for threshold candidates. Use `--cache-mode replay_only` for a fully offline rerun.
+Add `--semantic --task <task.yaml>` to request bounded question rewrites through the same local-first
+teacher policy. A rewrite cannot add actions or arbitrary code.
+
 ## Repository map
 
 - `src/jevcompiler/specs`: canonical TaskSpec and restricted DecisionProgram DSL
@@ -62,6 +70,7 @@ Jev execution are separate concerns.
 - `src/jevcompiler/providers`: TypeSafe client and local-first structured teacher adapters
 - `src/jevcompiler/dataset`: provenance, labeling, validation, and deterministic splits
 - `src/jevcompiler/baseline`: constrained compilation and trace-rich evaluation
+- `src/jevcompiler/optimizer`: cache/replay, failure evidence, mutations, lineage, and Pareto search
 - `src/jevcompiler/security.py`: log-safe secret redaction
 - `docs/spec/`: progressive specification from big picture to concrete delivery slices
 - `docs/IMPLEMENTATION_PLAN.md`: dependency-aware execution tracker

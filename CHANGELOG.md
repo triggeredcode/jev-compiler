@@ -8,4 +8,7 @@
 - Add structured-output teacher adapters with explicit paid-provider guards.
 - Add provenance-aware synthetic datasets with deterministic splits and integrity hashes.
 - Add constrained baseline compilation, repair, trace capture, and per-class metrics.
+- Add content-addressed SQLite recording/replay with replay-only fail-closed behavior.
+- Add failure corpora, threshold search, structured mutations, lineage, and Pareto selection.
+- Add an optimization CLI that emits selected programs, metrics, lineage, and failure evidence.
 - Add CLI validation, execution, provider diagnostics, examples, tests, and CI.

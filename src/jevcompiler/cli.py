@@ -11,6 +11,7 @@ from pydantic import ValidationError
 from rich.console import Console
 from rich.table import Table
 
+from jevcompiler.cli_artifact import app as artifact_app
 from jevcompiler.cli_baseline import app as baseline_app
 from jevcompiler.cli_dataset import app as dataset_app
 from jevcompiler.cli_optimize import app as optimize_app
@@ -23,6 +24,7 @@ from jevcompiler.specs import load_program, load_task
 from jevcompiler.specs.common import SpecLoadError
 
 app = typer.Typer(no_args_is_help=True, pretty_exceptions_show_locals=False)
+app.add_typer(artifact_app, name="artifact", help="Freeze and verify deployment artifacts.")
 app.add_typer(dataset_app, name="dataset", help="Build reproducible evaluation datasets.")
 app.add_typer(baseline_app, name="baseline", help="Compile and evaluate baseline programs.")
 app.add_typer(optimize_app, name="optimize", help="Optimize programs with cached evidence.")

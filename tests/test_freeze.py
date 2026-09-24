@@ -1,8 +1,10 @@
 from datetime import UTC, datetime
 
 import pytest
+from typer.testing import CliRunner
 
 from jevcompiler.baseline.models import CaseEvaluation, EvaluationReport
+from jevcompiler.cli import app
 from jevcompiler.dataset.models import (
     CaseProvenance,
     DatasetBundle,
@@ -177,3 +179,15 @@ def test_freeze_rejects_mismatched_held_out_evidence(tmp_path) -> None:
 
     with pytest.raises(ArtifactError, match="held-out evaluation digest"):
         freeze_optimization(result, dataset, tmp_path / "frozen")
+
+
+def test_report_command_verifies_artifact_without_opening_browser(tmp_path) -> None:
+    result, dataset = _result()
+    root = tmp_path / "frozen"
+    freeze_optimization(result, dataset, root)
+
+    completed = CliRunner().invoke(app, ["report", str(root), "--no-open"])
+
+    assert completed.exit_code == 0
+    assert "report.html" in completed.output
+    assert root.name in completed.output

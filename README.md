@@ -74,4 +74,4 @@ outputs. Users remain responsible for complying with provider terms. See [SECURI
 - [TypeSafe cookbooks](https://docs.typesafe.ai/cookbooks)
 - [TypeSafe models](https://docs.typesafe.ai/models)
 
-Licensed under Apache-2.0.
+Licensed under the MIT License.

@@ -72,3 +72,4 @@ class OptimizationResult(StrictModel):
     cache_hits: int = Field(ge=0)
     cache_misses: int = Field(ge=0)
     live_calls: int = Field(ge=0)
+    selection_digest: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")

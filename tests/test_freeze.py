@@ -154,6 +154,7 @@ def test_frozen_artifact_is_complete_and_verifiable(tmp_path) -> None:
     assert "Held-out test" in report
     assert "Accuracy by generation" in report
     assert "Pareto trade-off" in report
+    assert "CF stability" in report
     assert "Failure browser" in report
 
 
@@ -180,9 +181,7 @@ def test_freeze_rejects_mismatched_held_out_evidence(tmp_path) -> None:
     result, dataset = _result()
     assert result.held_out is not None
     result = result.model_copy(
-        update={
-            "held_out": result.held_out.model_copy(update={"digest": "b" * 64})
-        }
+        update={"held_out": result.held_out.model_copy(update={"digest": "b" * 64})}
     )
 
     with pytest.raises(ArtifactError, match="held-out evaluation digest"):
@@ -206,11 +205,7 @@ def test_frozen_artifact_identity_includes_approval_evidence() -> None:
     original = frozen_artifact_id(result)
     assert result.held_out is not None
     changed = result.model_copy(
-        update={
-            "held_out": result.held_out.model_copy(
-                update={"digest": "b" * 64}
-            )
-        }
+        update={"held_out": result.held_out.model_copy(update={"digest": "b" * 64})}
     )
 
     assert original.startswith(f"{result.selected_candidate_id}-")

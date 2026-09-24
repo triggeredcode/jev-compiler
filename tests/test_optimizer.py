@@ -326,6 +326,28 @@ def test_equal_candidate_does_not_displace_baseline(tmp_path) -> None:
     assert result.selected_candidate_id == result.baseline_candidate_id
 
 
+def test_optimizer_records_counterfactual_stability(tmp_path) -> None:
+    parent = _case(1, "billing", 0.95, "billing")
+    child = _case(2, "technical", 0.95, "technical").model_copy(
+        update={"bucket": "counterfactual", "parent_id": parent.id}
+    )
+
+    with JevCache(tmp_path / "jev.sqlite3") as cache:
+        provider = CachingSystemOneProvider(cache, ConfidenceProvider())
+        result = asyncio.run(
+            Optimizer(provider).optimize(_program(), [parent, child], thresholds=[0.7])
+        )
+
+    selected = next(
+        candidate
+        for candidate in result.candidates
+        if candidate.candidate_id == result.selected_candidate_id
+    )
+    assert selected.metrics is not None
+    assert selected.metrics.counterfactual_pairs == 1
+    assert selected.metrics.counterfactual_stability == 1.0
+
+
 def test_held_out_evaluation_preserves_selection_and_compares_baseline(tmp_path) -> None:
     selection = [
         _case(1, "billing", 0.9, "billing"),
@@ -342,9 +364,7 @@ def test_held_out_evaluation_preserves_selection_and_compares_baseline(tmp_path)
         with JevCache(tmp_path / "jev.sqlite3") as cache:
             provider = CachingSystemOneProvider(cache, upstream)
             optimizer = Optimizer(provider)
-            result = await optimizer.optimize(
-                _program(), selection, thresholds=[0.3, 0.5, 0.7]
-            )
+            result = await optimizer.optimize(_program(), selection, thresholds=[0.3, 0.5, 0.7])
             selected_id = result.selected_candidate_id
             result = await optimizer.evaluate_held_out(result, held_out)
             return result, selected_id

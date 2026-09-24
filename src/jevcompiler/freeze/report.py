@@ -11,6 +11,8 @@ def _metric(candidate: CandidateRecord, name: str) -> str:
     if candidate.metrics is None:
         return "—"
     value = getattr(candidate.metrics, name)
+    if value is None:
+        return "—"
     return f"{value:.3f}" if isinstance(value, float) else str(value)
 
 
@@ -67,9 +69,7 @@ def _pareto_chart(result: OptimizationResult) -> str:
 
     def render_dot(candidate: CandidateRecord) -> str:
         assert candidate.metrics is not None
-        css_class = (
-            "selected-dot" if candidate.candidate_id == result.selected_candidate_id else ""
-        )
+        css_class = "selected-dot" if candidate.candidate_id == result.selected_candidate_id else ""
         x = 40 + candidate.metrics.graph_complexity / max(max_complexity, 1) * 640
         y = 180 - candidate.metrics.accuracy * 140
         return (
@@ -118,34 +118,41 @@ def render_report(result: OptimizationResult) -> str:
             f"<td>{escape(candidate.status)}</td>"
             f"<td>{_metric(candidate, 'accuracy')}</td>"
             f"<td>{_metric(candidate, 'macro_f1')}</td>"
+            f"<td>{_metric(candidate, 'counterfactual_stability')}</td>"
             f"<td>{_metric(candidate, 'jev_calls')}</td>"
             f"<td>{_metric(candidate, 'graph_complexity')}</td>"
             "</tr>"
         )
         for candidate in result.candidates
     )
-    failure_rows = "".join(
-        (
-            "<tr>"
-            f"<td>{escape(cluster.key)}</td>"
-            f"<td>{escape(cluster.description)}</td>"
-            f"<td>{len(cluster.case_ids)}</td>"
-            "</tr>"
+    failure_rows = (
+        "".join(
+            (
+                "<tr>"
+                f"<td>{escape(cluster.key)}</td>"
+                f"<td>{escape(cluster.description)}</td>"
+                f"<td>{len(cluster.case_ids)}</td>"
+                "</tr>"
+            )
+            for cluster in result.selected_failures.clusters
         )
-        for cluster in result.selected_failures.clusters
-    ) or '<tr><td colspan="3">No selected-candidate failures.</td></tr>'
-    failure_case_rows = "".join(
-        (
-            "<tr>"
-            f"<td><code>{escape(case.case_id)}</code></td>"
-            f"<td>{escape(case.bucket)}</td>"
-            f"<td>{escape(case.expected_action)}</td>"
-            f"<td>{escape(case.predicted_action or '—')}</td>"
-            f"<td>{escape(case.error or '—')}</td>"
-            "</tr>"
+        or '<tr><td colspan="3">No selected-candidate failures.</td></tr>'
+    )
+    failure_case_rows = (
+        "".join(
+            (
+                "<tr>"
+                f"<td><code>{escape(case.case_id)}</code></td>"
+                f"<td>{escape(case.bucket)}</td>"
+                f"<td>{escape(case.expected_action)}</td>"
+                f"<td>{escape(case.predicted_action or '—')}</td>"
+                f"<td>{escape(case.error or '—')}</td>"
+                "</tr>"
+            )
+            for case in result.selected_failures.cases
         )
-        for case in result.selected_failures.cases
-    ) or '<tr><td colspan="5">No selected-candidate failures.</td></tr>'
+        or '<tr><td colspan="5">No selected-candidate failures.</td></tr>'
+    )
     if result.held_out is None:
         held_out_baseline = "—"
         held_out_selected = "—"
@@ -200,9 +207,12 @@ def render_report(result: OptimizationResult) -> str:
   </p>
   <p>{escape(search_note)}</p>
   <section class="summary">
-    <div class="card"><strong>{_metric(selected, 'accuracy')}</strong>accuracy</div>
-    <div class="card"><strong>{_metric(selected, 'macro_f1')}</strong>macro F1</div>
-    <div class="card"><strong>{_metric(selected, 'jev_calls')}</strong>Jev calls</div>
+    <div class="card"><strong>{_metric(selected, "accuracy")}</strong>accuracy</div>
+    <div class="card"><strong>{_metric(selected, "macro_f1")}</strong>macro F1</div>
+    <div class="card">
+      <strong>{_metric(selected, "counterfactual_stability")}</strong>CF stability
+    </div>
+    <div class="card"><strong>{_metric(selected, "jev_calls")}</strong>Jev calls</div>
     <div class="card"><strong>{result.cache_hits}</strong>cache hits</div>
   </section>
   <h2>Baseline vs selected</h2>
@@ -211,8 +221,8 @@ def render_report(result: OptimizationResult) -> str:
     <tbody>
       <tr>
         <td>Selection split</td>
-        <td>{_metric(baseline, 'accuracy')}</td>
-        <td>{_metric(selected, 'accuracy')}</td>
+        <td>{_metric(baseline, "accuracy")}</td>
+        <td>{_metric(selected, "accuracy")}</td>
       </tr>
       <tr>
         <td>Held-out test</td>
@@ -233,7 +243,7 @@ def render_report(result: OptimizationResult) -> str:
   <table>
     <thead><tr>
       <th>Candidate</th><th>Parent</th><th>Mutation</th><th>Status</th>
-      <th>Accuracy</th><th>Macro F1</th><th>Calls</th><th>Complexity</th>
+      <th>Accuracy</th><th>Macro F1</th><th>CF stability</th><th>Calls</th><th>Complexity</th>
     </tr></thead>
     <tbody>{lineage_rows}</tbody>
   </table>

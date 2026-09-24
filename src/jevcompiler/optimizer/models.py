@@ -42,6 +42,8 @@ class FailureCorpus(StrictModel):
 class CandidateMetrics(StrictModel):
     accuracy: float = Field(ge=0, le=1)
     macro_f1: float = Field(ge=0, le=1)
+    counterfactual_stability: float | None = Field(default=None, ge=0, le=1)
+    counterfactual_pairs: int = Field(default=0, ge=0)
     jev_calls: int = Field(ge=0)
     question_count: int = Field(ge=0)
     question_tokens: int = Field(ge=0)

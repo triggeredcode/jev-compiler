@@ -215,3 +215,69 @@ def test_equal_candidate_does_not_displace_baseline(tmp_path) -> None:
 
     result = asyncio.run(exercise())
     assert result.selected_candidate_id == result.baseline_candidate_id
+
+
+def test_held_out_evaluation_preserves_selection_and_compares_baseline(tmp_path) -> None:
+    selection = [
+        _case(1, "billing", 0.9, "billing"),
+        _case(2, "billing", 0.6, "billing"),
+        _case(3, "technical", 0.4, "manual_review"),
+    ]
+    held_out = [
+        _case(4, "billing", 0.6, "billing"),
+        _case(5, "technical", 0.4, "manual_review"),
+    ]
+
+    async def exercise():
+        upstream = ConfidenceProvider()
+        with JevCache(tmp_path / "jev.sqlite3") as cache:
+            provider = CachingSystemOneProvider(cache, upstream)
+            optimizer = Optimizer(provider)
+            result = await optimizer.optimize(
+                _program(), selection, thresholds=[0.3, 0.5, 0.7]
+            )
+            selected_id = result.selected_candidate_id
+            result = await optimizer.evaluate_held_out(result, held_out)
+            return result, selected_id
+
+    result, selected_id = asyncio.run(exercise())
+
+    assert result.selected_candidate_id == selected_id
+    assert result.held_out is not None
+    assert result.held_out.digest != result.selection_digest
+    assert result.held_out.baseline_metrics.accuracy == 0.5
+    assert result.held_out.selected_metrics.accuracy == 1.0
+    assert result.held_out.baseline_evaluation.total == 2
+    assert result.held_out.selected_evaluation.total == 2
+
+
+def test_held_out_evaluation_does_not_duplicate_identical_program(tmp_path) -> None:
+    case = _case(1, "billing", 0.95, "billing")
+
+    async def exercise():
+        provider = ConfidenceProvider()
+        optimizer = Optimizer(provider)
+        result = await optimizer.optimize(_program(), [case], thresholds=[0.7])
+        calls_before = provider.calls
+        result = await optimizer.evaluate_held_out(result, [case])
+        return result, provider.calls - calls_before
+
+    result, held_out_calls = asyncio.run(exercise())
+
+    assert result.selected_candidate_id == result.baseline_candidate_id
+    assert result.held_out is not None
+    assert held_out_calls == 1
+
+
+def test_empty_held_out_split_is_explicitly_unavailable(tmp_path) -> None:
+    case = _case(1, "billing", 0.95, "billing")
+
+    async def exercise():
+        with JevCache(tmp_path / "jev.sqlite3") as cache:
+            provider = CachingSystemOneProvider(cache, ConfidenceProvider())
+            optimizer = Optimizer(provider)
+            result = await optimizer.optimize(_program(), [case], thresholds=[0.7])
+            return await optimizer.evaluate_held_out(result, [])
+
+    result = asyncio.run(exercise())
+    assert result.held_out is None

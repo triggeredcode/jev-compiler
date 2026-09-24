@@ -21,6 +21,7 @@ from jevcompiler.optimizer.mutations import (
     program_id,
     set_confidence_threshold,
 )
+from jevcompiler.optimizer.stability import counterfactual_stability
 from jevcompiler.providers.base import SystemOneProvider
 from jevcompiler.providers.cache import CacheMissError
 from jevcompiler.runs import content_digest
@@ -45,27 +46,26 @@ def _question_tokens(program: DecisionProgram) -> int:
 
 
 def candidate_metrics(
-    program: DecisionProgram, report: EvaluationReport
+    program: DecisionProgram,
+    report: EvaluationReport,
+    cases: Sequence[DatasetCase] = (),
 ) -> CandidateMetrics:
     macro_f1 = (
         sum(metric.f1 for metric in report.per_action.values()) / len(report.per_action)
         if report.per_action
         else 0.0
     )
-    jev_calls = sum(
-        event.stage_type == "jev"
-        for case in report.cases
-        for event in case.trace
-    )
+    jev_calls = sum(event.stage_type == "jev" for case in report.cases for event in case.trace)
     question_count = sum(
         len(stage.questions) for stage in program.stages if isinstance(stage, JevNode)
     )
-    rule_count = sum(
-        len(stage.rules) for stage in program.stages if isinstance(stage, BranchNode)
-    )
+    rule_count = sum(len(stage.rules) for stage in program.stages if isinstance(stage, BranchNode))
+    stability, pairs = counterfactual_stability(report, cases)
     return CandidateMetrics(
         accuracy=report.accuracy,
         macro_f1=macro_f1,
+        counterfactual_stability=stability,
+        counterfactual_pairs=pairs,
         jev_calls=jev_calls,
         question_count=question_count,
         question_tokens=_question_tokens(program),
@@ -73,11 +73,14 @@ def candidate_metrics(
     )
 
 
-def _quality_key(record: CandidateRecord) -> tuple[float, float, int, int, int, int, str]:
+def _quality_key(
+    record: CandidateRecord,
+) -> tuple[float, float, float, int, int, int, int, str]:
     assert record.metrics is not None
     return (
         record.metrics.accuracy,
         record.metrics.macro_f1,
+        record.metrics.counterfactual_stability or 0.0,
         -record.metrics.jev_calls,
         -record.metrics.question_tokens,
         -record.metrics.graph_complexity,
@@ -90,6 +93,7 @@ def _dominates(left: CandidateMetrics, right: CandidateMetrics) -> bool:
     comparisons = (
         left.accuracy >= right.accuracy,
         left.macro_f1 >= right.macro_f1,
+        (left.counterfactual_stability or 0.0) >= (right.counterfactual_stability or 0.0),
         left.jev_calls <= right.jev_calls,
         left.question_tokens <= right.question_tokens,
         left.graph_complexity <= right.graph_complexity,
@@ -97,6 +101,7 @@ def _dominates(left: CandidateMetrics, right: CandidateMetrics) -> bool:
     strict = (
         left.accuracy > right.accuracy
         or left.macro_f1 > right.macro_f1
+        or (left.counterfactual_stability or 0.0) > (right.counterfactual_stability or 0.0)
         or left.jev_calls < right.jev_calls
         or left.question_tokens < right.question_tokens
         or left.graph_complexity < right.graph_complexity
@@ -230,23 +235,21 @@ class Optimizer:
             pareto_frontier=frontier,
             candidates=finalized,
             baseline_failures=build_failure_corpus(
-                baseline_record.evaluation, cases  # type: ignore[arg-type]
+                baseline_record.evaluation,
+                cases,  # type: ignore[arg-type]
             ),
             selected_failures=build_failure_corpus(
-                selected.evaluation, cases  # type: ignore[arg-type]
+                selected.evaluation,
+                cases,  # type: ignore[arg-type]
             ),
             cache_hits=stats.hits if stats else 0,
             cache_misses=stats.misses if stats else 0,
             live_calls=stats.live_calls if stats else 0,
-            selection_digest=content_digest(
-                [case.model_dump(mode="json") for case in cases]
-            ),
+            selection_digest=content_digest([case.model_dump(mode="json") for case in cases]),
             search=SearchSummary(
                 candidate_budget=max_candidates,
                 evaluated_candidates=len(records),
-                stop_reason=(
-                    "candidate_budget" if budget_exhausted else "search_exhausted"
-                ),
+                stop_reason=("candidate_budget" if budget_exhausted else "search_exhausted"),
             ),
         )
 
@@ -273,8 +276,8 @@ class Optimizer:
             digest=content_digest([case.model_dump(mode="json") for case in cases]),
             baseline_candidate_id=baseline.candidate_id,
             selected_candidate_id=selected.candidate_id,
-            baseline_metrics=candidate_metrics(baseline.program, baseline_report),
-            selected_metrics=candidate_metrics(selected.program, selected_report),
+            baseline_metrics=candidate_metrics(baseline.program, baseline_report, cases),
+            selected_metrics=candidate_metrics(selected.program, selected_report, cases),
             baseline_evaluation=baseline_report,
             selected_evaluation=selected_report,
         )
@@ -309,6 +312,6 @@ class Optimizer:
             semantic_diff=semantic_diff,
             status=status,
             program=program,
-            metrics=candidate_metrics(program, report),
+            metrics=candidate_metrics(program, report, cases),
             evaluation=report,
         )

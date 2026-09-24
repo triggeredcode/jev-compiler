@@ -24,6 +24,7 @@ from jevcompiler.optimizer.mutations import (
 )
 from jevcompiler.optimizer.proposals import ProposalError, propose_question_rewrites
 from jevcompiler.optimizer.search import Optimizer, candidate_metrics, pareto_frontier
+from jevcompiler.optimizer.stability import counterfactual_stability
 
 __all__ = [
     "AdaptiveDatasetBuilder",
@@ -42,6 +43,7 @@ __all__ = [
     "add_question",
     "build_failure_corpus",
     "candidate_metrics",
+    "counterfactual_stability",
     "confidence_dimensions",
     "merge_choice_questions",
     "pareto_frontier",

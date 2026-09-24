@@ -76,6 +76,37 @@ def test_teacher_rejects_invalid_structured_content() -> None:
     asyncio.run(client.aclose())
 
 
+def test_teacher_retries_invalid_structured_content() -> None:
+    calls = 0
+
+    def handler(_: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        content = "not json" if calls == 1 else '{"answer":"billing"}'
+        return httpx.Response(
+            200,
+            json={"model": "local", "choices": [{"message": {"content": content}}]},
+        )
+
+    client = httpx.AsyncClient(
+        transport=httpx.MockTransport(handler),
+        base_url="http://local/v1/",
+    )
+    teacher = OpenAICompatibleTeacher(
+        provider="local",
+        base_url="http://local/v1",
+        model="model",
+        client=client,
+        max_retries=1,
+    )
+
+    result = asyncio.run(teacher.structured_generate([], ExampleOutput))
+
+    asyncio.run(client.aclose())
+    assert result.value.answer == "billing"
+    assert calls == 2
+
+
 def test_paid_openrouter_requires_opt_in(monkeypatch) -> None:
     monkeypatch.setenv("OPENROUTER_API_KEY", "secret")
     config = TeacherConfig(provider="openrouter", model="vendor/paid-model")

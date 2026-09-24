@@ -12,6 +12,7 @@ from jevcompiler.providers.cache import (
     CacheStats,
     CachingSystemOneProvider,
     JevCache,
+    LiveCallBudgetExceeded,
     cache_key,
 )
 from jevcompiler.providers.fake import RecordedSystemOneProvider
@@ -32,6 +33,7 @@ __all__ = [
     "CachingSystemOneProvider",
     "ChoiceAnswer",
     "JevCache",
+    "LiveCallBudgetExceeded",
     "NoulAnswer",
     "OpenAICompatibleTeacher",
     "RecordedTeacherProvider",

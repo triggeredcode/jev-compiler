@@ -23,6 +23,10 @@ class CacheMissError(CacheError):
     """Replay-only mode encountered an unrecorded request."""
 
 
+class LiveCallBudgetExceeded(CacheError):
+    """A live Jev request would exceed the configured hard ceiling."""
+
+
 class CacheMode(StrEnum):
     read_write = "read_write"
     replay_only = "replay_only"
@@ -122,14 +126,19 @@ class CachingSystemOneProvider:
         upstream: SystemOneProvider | None = None,
         *,
         mode: CacheMode = CacheMode.read_write,
+        max_live_calls: int | None = None,
     ) -> None:
         if mode is not CacheMode.replay_only and upstream is None:
             raise ValueError("an upstream provider is required outside replay-only mode")
+        if max_live_calls is not None and max_live_calls < 0:
+            raise ValueError("max_live_calls cannot be negative")
         self.cache = cache
         self.upstream = upstream
         self.mode = mode
+        self.max_live_calls = max_live_calls
         self.stats = CacheStats()
         self._locks: dict[str, asyncio.Lock] = {}
+        self._budget_lock = asyncio.Lock()
 
     async def evaluate(
         self,
@@ -151,7 +160,15 @@ class CachingSystemOneProvider:
             if self.mode is CacheMode.replay_only or self.upstream is None:
                 raise CacheMissError(f"no recorded Jev response for cache key {key}")
 
-            self.stats.live_calls += 1
+            async with self._budget_lock:
+                if (
+                    self.max_live_calls is not None
+                    and self.stats.live_calls >= self.max_live_calls
+                ):
+                    raise LiveCallBudgetExceeded(
+                        f"live Jev call budget exhausted ({self.max_live_calls})"
+                    )
+                self.stats.live_calls += 1
             result = await self.upstream.evaluate(state, questions, model=model)
             self.cache.put(key, request, result)
             return result

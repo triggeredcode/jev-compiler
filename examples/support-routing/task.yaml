@@ -1,0 +1,31 @@
+version: 1
+name: support-router
+description: Route incoming customer support requests to the responsible team.
+state:
+  description: A support ticket with a title, body, customer tier, and account metadata.
+actions:
+  - billing
+  - technical
+  - sales
+  - abuse
+  - manual_review
+policy:
+  - Billing covers payments, invoices, refunds, and subscription charges.
+  - Technical covers broken or incorrect product behavior.
+  - Sales covers purchasing, upgrades, and pricing.
+  - Abuse covers malicious or prohibited behavior.
+  - Ambiguous requests must go to manual review.
+objectives:
+  primary: teacher_agreement
+  secondary:
+    - minimize_cost
+    - minimize_latency
+    - minimize_graph_complexity
+constraints:
+  max_jev_calls: 2
+  max_questions: 8
+  allow_fallback: true
+teacher:
+  provider: auto
+  allow_paid: false
+

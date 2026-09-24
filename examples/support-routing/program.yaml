@@ -1,0 +1,39 @@
+version: 1
+name: support-router
+actions:
+  - billing
+  - technical
+  - sales
+  - abuse
+  - manual_review
+entrypoint: classify
+jev_model: jev-latest
+stages:
+  - id: classify
+    type: jev
+    questions:
+      route:
+        type: choice
+        instructions: What is the primary reason for this support ticket?
+        criteria:
+          billing: Payment, invoice, refund, or subscription charge.
+          technical: Broken or incorrect product behavior.
+          sales: Purchasing, upgrade, pricing, or plan information.
+          other: None of the listed categories clearly fits.
+      is_abuse:
+        type: noul
+        instructions: Does the ticket describe malicious, abusive, or prohibited behavior?
+    next: decide
+  - id: decide
+    type: branch
+    rules:
+      - when: is_abuse >= 0.9
+        return: abuse
+      - when: route.choice == "billing" and route.confidence >= 0.65
+        return: billing
+      - when: route.choice == "technical" and route.confidence >= 0.65
+        return: technical
+      - when: route.choice == "sales" and route.confidence >= 0.65
+        return: sales
+    default: manual_review
+

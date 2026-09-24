@@ -8,7 +8,8 @@ a generic prompt optimizer, a hosted service, or a model-training/distillation s
 
 > Status: the foundation, typed DSL, safe runtime, TypeSafe boundary, structured teacher layer,
 > provenance-aware dataset synthesis, constrained baseline compiler/evaluator, and the measurable
-> optimization core are implemented. Frozen artifacts and showcase reporting are the next slice.
+> optimization core are implemented. The compiler can produce verified, immutable deployment
+> artifacts with a self-contained inspection report.
 
 ## Why this shape
 
@@ -31,6 +32,20 @@ uv run jevcompiler validate examples/support-routing/program.yaml --kind program
 uv run jevcompiler run examples/support-routing/program.yaml \
   examples/support-routing/state.json \
   --answers examples/support-routing/answers.json
+uv run jevcompiler build examples/support-routing/task.yaml --budget quick
+uv run jevcompiler artifact verify \
+  .jevcompiler/artifacts/support-router/frozen/<candidate-id>
+uv run pytest
+```
+
+`build` runs dataset generation, baseline compilation, optimization, and artifact freezing in
+dependency order. It validates compatible phase outputs before resuming. Use `--budget quick` for a
+small structural search, `standard` for semantic rewrites and a broader search, or `deep` for the
+largest built-in evidence and search budget.
+
+Each phase is also available independently:
+
+```bash
 uv run jevcompiler dataset build examples/support-routing/task.yaml --normal 8 --boundary 4
 uv run jevcompiler baseline build \
   examples/support-routing/task.yaml \
@@ -38,7 +53,9 @@ uv run jevcompiler baseline build \
 uv run jevcompiler optimize run \
   .jevcompiler/artifacts/support-router/baseline/program.yaml \
   .jevcompiler/artifacts/support-router/dataset
-uv run pytest
+uv run jevcompiler artifact freeze \
+  .jevcompiler/artifacts/support-router/optimization/optimization.json \
+  .jevcompiler/artifacts/support-router/dataset
 ```
 
 For a live Jev call, export `TYPESAFE_API_KEY` and omit `--answers`. Supply every credential through
@@ -62,6 +79,7 @@ All generated datasets, programs, metrics, lineage, and failure evidence live un
 `.jevcompiler/artifacts/<task>/`. TypeSafe recordings live under `.jevcompiler/cache/`, and the
 entire workspace is excluded from version control. Use `--cache-mode replay_only` for a fully
 offline rerun.
+
 Add `--semantic --task <task.yaml>` to request bounded question rewrites through the same local-first
 teacher policy. A rewrite cannot add actions or arbitrary code.
 
@@ -73,6 +91,7 @@ teacher policy. A rewrite cannot add actions or arbitrary code.
 - `src/jevcompiler/dataset`: provenance, labeling, validation, and deterministic splits
 - `src/jevcompiler/baseline`: constrained compilation and trace-rich evaluation
 - `src/jevcompiler/optimizer`: cache/replay, failure evidence, mutations, lineage, and Pareto search
+- `src/jevcompiler/freeze`: immutable artifact manifests, integrity verification, and static reports
 - `src/jevcompiler/security.py`: log-safe secret redaction
 - `examples/support-routing`: runnable offline example
 

@@ -11,4 +11,6 @@
 - Add content-addressed SQLite recording/replay with replay-only fail-closed behavior.
 - Add failure corpora, threshold search, structured mutations, lineage, and Pareto selection.
 - Add an optimization CLI that emits selected programs, metrics, lineage, and failure evidence.
+- Add immutable deployment artifacts with digest verification and self-contained HTML reports.
+- Add a resumable end-to-end build command with quick, standard, and deep budgets.
 - Add CLI validation, execution, provider diagnostics, examples, tests, and CI.

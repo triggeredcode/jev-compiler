@@ -348,6 +348,28 @@ def test_optimizer_records_counterfactual_stability(tmp_path) -> None:
     assert selected.metrics.counterfactual_stability == 1.0
 
 
+def test_optimizer_records_semantic_invariance(tmp_path) -> None:
+    parent = _case(1, "billing", 0.95, "billing")
+    variation = _case(2, "billing", 0.95, "billing").model_copy(
+        update={"bucket": "semantic_variation", "parent_id": parent.id}
+    )
+
+    with JevCache(tmp_path / "jev.sqlite3") as cache:
+        provider = CachingSystemOneProvider(cache, ConfidenceProvider())
+        result = asyncio.run(
+            Optimizer(provider).optimize(_program(), [parent, variation], thresholds=[0.7])
+        )
+
+    selected = next(
+        candidate
+        for candidate in result.candidates
+        if candidate.candidate_id == result.selected_candidate_id
+    )
+    assert selected.metrics is not None
+    assert selected.metrics.semantic_variation_pairs == 1
+    assert selected.metrics.semantic_invariance == 1.0
+
+
 def test_optimizer_builds_training_failure_evidence_with_provenance() -> None:
     case = _case(1, "billing", 0.4, "billing")
 

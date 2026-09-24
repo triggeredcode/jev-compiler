@@ -119,6 +119,7 @@ def render_report(result: OptimizationResult) -> str:
             f"<td>{_metric(candidate, 'accuracy')}</td>"
             f"<td>{_metric(candidate, 'macro_f1')}</td>"
             f"<td>{_metric(candidate, 'counterfactual_stability')}</td>"
+            f"<td>{_metric(candidate, 'semantic_invariance')}</td>"
             f"<td>{_metric(candidate, 'jev_calls')}</td>"
             f"<td>{_metric(candidate, 'graph_complexity')}</td>"
             "</tr>"
@@ -212,6 +213,9 @@ def render_report(result: OptimizationResult) -> str:
     <div class="card">
       <strong>{_metric(selected, "counterfactual_stability")}</strong>CF stability
     </div>
+    <div class="card">
+      <strong>{_metric(selected, "semantic_invariance")}</strong>semantic invariance
+    </div>
     <div class="card"><strong>{_metric(selected, "jev_calls")}</strong>Jev calls</div>
     <div class="card"><strong>{result.cache_hits}</strong>cache hits</div>
   </section>
@@ -243,7 +247,8 @@ def render_report(result: OptimizationResult) -> str:
   <table>
     <thead><tr>
       <th>Candidate</th><th>Parent</th><th>Mutation</th><th>Status</th>
-      <th>Accuracy</th><th>Macro F1</th><th>CF stability</th><th>Calls</th><th>Complexity</th>
+      <th>Accuracy</th><th>Macro F1</th><th>CF stability</th><th>Semantic invariance</th>
+      <th>Calls</th><th>Complexity</th>
     </tr></thead>
     <tbody>{lineage_rows}</tbody>
   </table>

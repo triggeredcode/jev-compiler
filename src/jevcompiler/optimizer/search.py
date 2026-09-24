@@ -22,7 +22,7 @@ from jevcompiler.optimizer.mutations import (
     program_id,
     set_confidence_threshold,
 )
-from jevcompiler.optimizer.stability import counterfactual_stability
+from jevcompiler.optimizer.stability import counterfactual_stability, semantic_invariance
 from jevcompiler.providers.base import SystemOneProvider
 from jevcompiler.providers.cache import CacheMissError
 from jevcompiler.runs import content_digest
@@ -62,11 +62,14 @@ def candidate_metrics(
     )
     rule_count = sum(len(stage.rules) for stage in program.stages if isinstance(stage, BranchNode))
     stability, pairs = counterfactual_stability(report, cases)
+    invariance, variation_pairs = semantic_invariance(report, cases)
     return CandidateMetrics(
         accuracy=report.accuracy,
         macro_f1=macro_f1,
         counterfactual_stability=stability,
         counterfactual_pairs=pairs,
+        semantic_invariance=invariance,
+        semantic_variation_pairs=variation_pairs,
         jev_calls=jev_calls,
         question_count=question_count,
         question_tokens=_question_tokens(program),
@@ -76,12 +79,13 @@ def candidate_metrics(
 
 def _quality_key(
     record: CandidateRecord,
-) -> tuple[float, float, float, int, int, int, int, str]:
+) -> tuple[float, float, float, float, int, int, int, int, str]:
     assert record.metrics is not None
     return (
         record.metrics.accuracy,
         record.metrics.macro_f1,
         record.metrics.counterfactual_stability or 0.0,
+        record.metrics.semantic_invariance or 0.0,
         -record.metrics.jev_calls,
         -record.metrics.question_tokens,
         -record.metrics.graph_complexity,
@@ -95,6 +99,7 @@ def _dominates(left: CandidateMetrics, right: CandidateMetrics) -> bool:
         left.accuracy >= right.accuracy,
         left.macro_f1 >= right.macro_f1,
         (left.counterfactual_stability or 0.0) >= (right.counterfactual_stability or 0.0),
+        (left.semantic_invariance or 0.0) >= (right.semantic_invariance or 0.0),
         left.jev_calls <= right.jev_calls,
         left.question_tokens <= right.question_tokens,
         left.graph_complexity <= right.graph_complexity,
@@ -103,6 +108,7 @@ def _dominates(left: CandidateMetrics, right: CandidateMetrics) -> bool:
         left.accuracy > right.accuracy
         or left.macro_f1 > right.macro_f1
         or (left.counterfactual_stability or 0.0) > (right.counterfactual_stability or 0.0)
+        or (left.semantic_invariance or 0.0) > (right.semantic_invariance or 0.0)
         or left.jev_calls < right.jev_calls
         or left.question_tokens < right.question_tokens
         or left.graph_complexity < right.graph_complexity

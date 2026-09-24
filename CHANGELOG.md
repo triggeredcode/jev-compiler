@@ -13,4 +13,7 @@
 - Add an optimization CLI that emits selected programs, metrics, lineage, and failure evidence.
 - Add immutable deployment artifacts with digest verification and self-contained HTML reports.
 - Add a resumable end-to-end build command with quick, standard, and deep budgets.
+- Add digest-bound held-out evaluation without allowing test evidence to affect selection.
+- Add hard live-call and candidate ceilings with recorded search termination reasons.
+- Add baseline/final, generation, Pareto, lineage, and failure views to static reports.
 - Add CLI validation, execution, provider diagnostics, examples, tests, and CI.

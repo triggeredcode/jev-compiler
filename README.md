@@ -35,13 +35,16 @@ uv run jevcompiler run examples/support-routing/program.yaml \
 uv run jevcompiler build examples/support-routing/task.yaml --budget quick
 uv run jevcompiler artifact verify \
   .jevcompiler/artifacts/support-router/frozen/<candidate-id>
+uv run jevcompiler report \
+  .jevcompiler/artifacts/support-router/frozen/<candidate-id>
 uv run pytest
 ```
 
 `build` runs dataset generation, baseline compilation, optimization, and artifact freezing in
 dependency order. It validates compatible phase outputs before resuming. Use `--budget quick` for a
 small structural search, `standard` for semantic rewrites and a broader search, or `deep` for the
-largest built-in evidence and search budget.
+largest built-in evidence and search budget. Every preset enforces hard ceilings for measured
+candidates and uncached TypeSafe requests.
 
 Each phase is also available independently:
 
@@ -82,6 +85,11 @@ offline rerun.
 
 Add `--semantic --task <task.yaml>` to request bounded question rewrites through the same local-first
 teacher policy. A rewrite cannot add actions or arbitrary code.
+
+Optimization uses the development split for selection, then measures the fixed baseline and selected
+program on the untouched test split. Frozen manifests bind those held-out results to the exact test
+cases by digest. The self-contained report shows baseline/final comparisons, accuracy by generation,
+the Pareto trade-off, candidate lineage, and failure evidence.
 
 ## Repository map
 

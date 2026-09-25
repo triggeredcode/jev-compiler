@@ -12,6 +12,20 @@ uv run ruff check .
 uv run pytest
 ```
 
+## Find a first contribution
+
+Browse the [`good first issue`](https://github.com/triggeredcode/jev-compiler/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22)
+or [`help wanted`](https://github.com/triggeredcode/jev-compiler/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22help%20wanted%22)
+queues for contained, non-blocking improvements. Before starting:
+
+1. Comment on the issue so work is not duplicated.
+2. Keep the pull request scoped to one issue and avoid unrelated cleanup.
+3. Ask in the issue if an acceptance criterion or boundary is unclear.
+
+A contribution is ready when its acceptance criteria are met, relevant tests and documentation are
+updated, and the checks below pass. Examples, logs, and fixtures must not contain credentials or
+private `.jevcompiler/` workspace content.
+
 ## Change guidelines
 
 - Use a short-lived branch and small, understandable commits.

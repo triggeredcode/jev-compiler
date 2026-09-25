@@ -209,6 +209,11 @@ Small, focused pull requests are welcome. New DSL behavior must include model va
 interpreter coverage, unsafe-input rejection tests, and documentation. New providers must use mocked
 HTTP tests and must never log credentials.
 
+Looking for a contained first change? Browse the open
+[`good first issue`](https://github.com/triggeredcode/jev-compiler/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22)
+and [`help wanted`](https://github.com/triggeredcode/jev-compiler/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22help%20wanted%22)
+queues, then claim one with a short comment.
+
 ## Acknowledgements
 
 Jev Compiler builds on the [TypeSafe Jev model](https://docs.typesafe.ai/introduction), including its

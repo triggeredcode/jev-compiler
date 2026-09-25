@@ -12,6 +12,7 @@
 - Add failure corpora, threshold search, structured mutations, lineage, and Pareto selection.
 - Add an optimization CLI that emits selected programs, metrics, lineage, and failure evidence.
 - Add immutable deployment artifacts with digest verification and self-contained HTML reports.
+- Add a credential-free expense-approval showcase that replays, freezes, and verifies one command.
 - Add a resumable end-to-end build command with quick, standard, and deep budgets.
 - Add digest-bound held-out evaluation without allowing test evidence to affect selection.
 - Add hard live-call and candidate ceilings with recorded search termination reasons.

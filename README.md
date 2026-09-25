@@ -35,6 +35,7 @@ directly with type stripping, and ordinary TypeScript toolchains can compile it 
 
 ```bash
 uv sync --extra dev
+uv run jevcompiler showcase
 uv run jevcompiler validate examples/support-routing/task.yaml --kind task
 uv run jevcompiler validate examples/support-routing/program.yaml --kind program
 uv run jevcompiler run examples/support-routing/program.yaml \
@@ -49,6 +50,13 @@ uv run jevcompiler report \
   .jevcompiler/artifacts/support-router/frozen/<candidate-id>
 uv run pytest
 ```
+
+`showcase` is the credential-free end-to-end path. It loads the committed expense-approval task,
+program, state, and recorded Jev answers; evaluates the expected decision; freezes a deployment
+artifact; and verifies every artifact hash. It performs no network requests and records
+`live_calls: 0`. By default, output is written under
+`.jevcompiler/artifacts/expense-approval/showcase/`; use `--output <path>` to choose a fresh
+destination. Frozen destinations are immutable and are never overwritten.
 
 `build` runs dataset generation, baseline compilation, optimization, and artifact freezing in
 dependency order. It validates compatible phase outputs before resuming. Use `--budget quick` for a
@@ -136,6 +144,7 @@ candidate lineage, and failure evidence.
 - `src/jevcompiler/freeze`: immutable artifacts, Python/TypeScript exports, verification, and reports
 - `src/jevcompiler/security.py`: log-safe secret redaction
 - `examples/support-routing`: runnable offline example
+- `examples/expense-approval`: credential-free replay and frozen-artifact showcase
 
 ## Security and terms
 

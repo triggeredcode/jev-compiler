@@ -1,0 +1,12 @@
+# Keep the build context intentionally narrow. Private workspace data and
+# unlisted local files cannot reach an image layer.
+**
+!Dockerfile
+!LICENSE
+!README.md
+!pyproject.toml
+!uv.lock
+!examples/
+!examples/**
+!src/
+!src/**

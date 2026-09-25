@@ -22,6 +22,7 @@
   <a href="#quickstart">Quickstart</a> ·
   <a href="#how-it-works">How it works</a> ·
   <a href="#local-first-model-routing">Model routing</a> ·
+  <a href="#container-quickstart">Containers</a> ·
   <a href="#deployment-artifact">Deployment</a> ·
   <a href="#documentation">Documentation</a>
 </p>
@@ -80,6 +81,20 @@ The command loads committed expense-approval fixtures, evaluates the expected de
 deployment artifact, and verifies every digest. Output stays in the ignored `.jevcompiler/`
 workspace. Read the [step-by-step quickstart](docs/quickstart.md) for live TypeSafe execution,
 replay mode, and full builds.
+
+### Container quickstart
+
+Prefer an isolated toolchain? The hardened image runs as a non-root user and keeps generated output
+in a Docker volume:
+
+```bash
+docker compose build compiler
+docker compose run --rm compiler showcase
+```
+
+The default container reaches host-run Ollama and LM Studio. An optional Compose profile can run a
+pinned Ollama service alongside the compiler. See the [container guide](docs/containers.md) for
+local-model setup, credential injection, storage, and direct image usage.
 
 > **Release status** — `v0.1` is a public alpha for evaluation and development. The compiler,
 > runtimes, artifact verification, and release distributions are tested across Python 3.11–3.13 on
@@ -173,6 +188,7 @@ published with [artifact attestations](https://github.com/triggeredcode/jev-comp
 | --- | --- |
 | [Quickstart](docs/quickstart.md) | Offline showcase, live TypeSafe calls, build budgets, and replay |
 | [Architecture](docs/architecture.md) | Compiler stages, trust boundaries, evidence, and artifact contract |
+| [Containers](docs/containers.md) | Hardened image, offline showcase, Ollama profile, and credentials |
 | [Release guide](docs/releasing.md) | Versioning, local checks, tags, distributions, and attestations |
 | [Security policy](SECURITY.md) | Vulnerability reporting, credential handling, and release integrity |
 | [Contributing](CONTRIBUTING.md) | Development setup, change guidelines, tests, and pull requests |
@@ -186,6 +202,7 @@ uv run ruff check .
 uv run pytest
 uv build
 uv run python scripts/verify_distribution.py dist
+docker compose config --quiet
 ```
 
 Small, focused pull requests are welcome. New DSL behavior must include model validation,

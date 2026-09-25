@@ -1,0 +1,55 @@
+name: jev-compiler
+
+x-compiler: &compiler
+  build:
+    context: .
+    dockerfile: Dockerfile
+  image: jev-compiler:local
+  init: true
+  read_only: true
+  working_dir: /workspace
+  volumes:
+    - compiler-data:/workspace/.jevcompiler
+  tmpfs:
+    - /tmp:size=64m,mode=1777
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  extra_hosts:
+    - host.docker.internal:host-gateway
+  environment: &host-models
+    OLLAMA_BASE_URL: http://host.docker.internal:11434
+    LMSTUDIO_BASE_URL: http://host.docker.internal:1234/v1
+
+services:
+  compiler:
+    <<: *compiler
+
+  compiler-ollama:
+    <<: *compiler
+    profiles: [ollama]
+    environment:
+      <<: *host-models
+      OLLAMA_BASE_URL: http://ollama:11434
+    depends_on:
+      ollama:
+        condition: service_healthy
+
+  ollama:
+    image: ${OLLAMA_IMAGE:-ollama/ollama:0.34.1}
+    profiles: [ollama]
+    volumes:
+      - ollama-models:/root/.ollama
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: [CMD, ollama, list]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+volumes:
+  compiler-data:
+  ollama-models:

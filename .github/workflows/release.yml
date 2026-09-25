@@ -1,0 +1,76 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.13"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install locked development environment
+        run: uv sync --extra dev --frozen
+
+      - name: Verify tag matches package version
+        shell: bash
+        run: |
+          version="$(uv run python -c 'from jevcompiler import __version__; print(__version__)')"
+          if [[ "${GITHUB_REF_NAME}" != "v${version}" ]]; then
+            echo "Tag ${GITHUB_REF_NAME} does not match package version v${version}." >&2
+            exit 1
+          fi
+
+      - name: Run quality gates
+        run: |
+          uv run ruff check .
+          uv run pytest
+
+      - name: Build and inspect distributions
+        run: |
+          uv build
+          uv run python scripts/verify_distribution.py dist
+
+      - name: Smoke-test wheel
+        shell: bash
+        run: |
+          uv venv .release-smoke
+          uv pip install --python .release-smoke/bin/python dist/*.whl
+          .release-smoke/bin/jevcompiler --help
+          .release-smoke/bin/python -c "from importlib.resources import files; assert files('jevcompiler.freeze').joinpath('runtime.ts').is_file()"
+
+      - name: Attest distributions
+        uses: actions/attest@v4
+        with:
+          subject-path: "dist/*"
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh release create "${GITHUB_REF_NAME}" dist/*
+          --verify-tag
+          --generate-notes
+          --title "Jev Compiler ${GITHUB_REF_NAME}"

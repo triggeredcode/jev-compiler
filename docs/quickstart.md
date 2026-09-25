@@ -100,7 +100,14 @@ with baseline/final metrics, generation history, Pareto trade-offs, lineage, and
 
 ## Live TypeSafe execution
 
-Export the key through the process environment and omit `--answers`:
+The offline commands above do not need a key. To replace recorded answers with a live Jev call:
+
+1. Sign in to the [TypeSafe dashboard](https://console.typesafe.ai/) and get an API key.
+2. Export that key as `TYPESAFE_API_KEY`.
+3. Omit `--answers` when running the program.
+
+TypeSafe's [official quickstart](https://docs.typesafe.ai/introduction/quickstart) covers the API and
+SDK setup in more detail.
 
 ```bash
 export TYPESAFE_API_KEY="..."
@@ -108,9 +115,10 @@ uv run jevcompiler run examples/support-routing/program.yaml \
   examples/support-routing/state.json
 ```
 
-Never add keys to tracked files. Generated recordings are stored under `.jevcompiler/cache/`, which
-is ignored. Use `--cache-mode replay_only` to require cached responses and fail closed instead of
-making a live request.
+`TYPESAFE_API_KEY` is a TypeSafe credential; Jev Compiler does not issue a separate key. Never add
+keys to tracked files. Generated recordings are stored under `.jevcompiler/cache/`, which is ignored.
+Use `--cache-mode replay_only` to require cached responses and fail closed instead of making a live
+request.
 
 ## Run phases independently
 

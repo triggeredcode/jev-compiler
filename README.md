@@ -105,6 +105,17 @@ service, or model-training/distillation system.
 
 ## Quickstart
 
+### Do I need an API key?
+
+Not for the offline showcase, recorded replay, artifact inspection, or verification. Those paths run
+without credentials or network access.
+
+A key is required only when Jev Compiler makes a live call to Jev. There is no separate Jev Compiler
+key: use a **TypeSafe API key** from the [TypeSafe dashboard](https://console.typesafe.ai/), expose it
+to the process as `TYPESAFE_API_KEY`, and keep it out of tracked files. The
+[official TypeSafe quickstart](https://docs.typesafe.ai/introduction/quickstart) explains the same
+setup for direct API and SDK use.
+
 Run the complete showcase without credentials or network access:
 
 ```bash

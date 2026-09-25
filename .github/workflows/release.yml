@@ -66,11 +66,17 @@ jobs:
         with:
           subject-path: "dist/*"
 
-      - name: Publish GitHub release
+      - name: Publish or refresh GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: >-
-          gh release create "${GITHUB_REF_NAME}" dist/*
-          --verify-tag
-          --generate-notes
-          --title "Jev Compiler ${GITHUB_REF_NAME}"
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            gh release upload "${GITHUB_REF_NAME}" dist/* --clobber
+          else
+            gh release create "${GITHUB_REF_NAME}" dist/* \
+              --verify-tag \
+              --generate-notes \
+              --title "Jev Compiler ${GITHUB_REF_NAME}"
+          fi

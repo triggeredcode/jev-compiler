@@ -1,3 +1,5 @@
+import re
+
 from typer.testing import CliRunner
 
 from jevcompiler.cli import app
@@ -10,6 +12,14 @@ from jevcompiler.cli_common import teacher_config_for
 from jevcompiler.cli_optimize import parse_thresholds
 from jevcompiler.dataset.models import DatasetBundle, DatasetManifest
 from jevcompiler.specs.task import TaskSpec
+
+_ANSI_ESCAPE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
+
+
+def _help(*command: str) -> str:
+    result = CliRunner().invoke(app, [*command, "--help"])
+    assert result.exit_code == 0
+    return _ANSI_ESCAPE.sub("", result.output)
 
 
 def _task() -> TaskSpec:
@@ -34,34 +44,26 @@ def test_teacher_override_does_not_enable_paid_models() -> None:
 
 
 def test_dataset_build_help_exposes_paid_guard() -> None:
-    result = CliRunner().invoke(app, ["dataset", "build", "--help"])
-
-    assert result.exit_code == 0
-    assert "--allow-paid" in result.output
+    assert "--allow-paid" in _help("dataset", "build")
 
 
 def test_dataset_adapt_help_requires_failure_evidence_and_paid_guard() -> None:
-    result = CliRunner().invoke(app, ["dataset", "adapt", "--help"])
+    output = _help("dataset", "adapt")
 
-    assert result.exit_code == 0
-    assert "failures_path" in result.output
-    assert "--allow-paid" in result.output
+    assert "failures_path" in output
+    assert "--allow-paid" in output
 
 
 def test_baseline_build_help_requires_dataset_path() -> None:
-    result = CliRunner().invoke(app, ["baseline", "build", "--help"])
-
-    assert result.exit_code == 0
-    assert "DATASET_PATH" in result.output
+    assert "DATASET_PATH" in _help("baseline", "build")
 
 
 def test_optimize_help_exposes_cache_and_semantic_controls() -> None:
-    result = CliRunner().invoke(app, ["optimize", "run", "--help"])
+    output = _help("optimize", "run")
 
-    assert result.exit_code == 0
-    assert "--cache-mode" in result.output
-    assert "--semantic" in result.output
-    assert "--allow-paid" in result.output
+    assert "--cache-mode" in output
+    assert "--semantic" in output
+    assert "--allow-paid" in output
 
 
 def test_threshold_parser_deduplicates_and_validates() -> None:
@@ -69,21 +71,18 @@ def test_threshold_parser_deduplicates_and_validates() -> None:
 
 
 def test_artifact_commands_are_exposed() -> None:
-    freeze_help = CliRunner().invoke(app, ["artifact", "freeze", "--help"])
-    verify_help = CliRunner().invoke(app, ["artifact", "verify", "--help"])
+    freeze_help = _help("artifact", "freeze")
+    _help("artifact", "verify")
 
-    assert freeze_help.exit_code == 0
-    assert verify_help.exit_code == 0
-    assert "OPTIMIZATION_PATH" in freeze_help.output.upper()
+    assert "OPTIMIZATION_PATH" in freeze_help.upper()
 
 
 def test_build_command_exposes_budgets_and_resume() -> None:
-    result = CliRunner().invoke(app, ["build", "--help"])
+    output = _help("build")
 
-    assert result.exit_code == 0
-    assert "quick" in result.output
-    assert "--resume" in result.output
-    assert "--adaptive-cases" in result.output
+    assert "quick" in output
+    assert "--resume" in output
+    assert "--adaptive-cases" in output
     assert BUDGETS[BuildBudget.quick].semantic is False
     assert BUDGETS[BuildBudget.standard].semantic is True
     assert BUDGETS[BuildBudget.quick].max_live_calls < BUDGETS[BuildBudget.deep].max_live_calls

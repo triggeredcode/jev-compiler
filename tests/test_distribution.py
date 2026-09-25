@@ -35,8 +35,11 @@ def _write_wheel(path: Path, *, private_member: str | None = None) -> None:
 def _write_sdist(path: Path) -> None:
     root = "jevcompiler-0.1.0"
     members = {
+        f"{root}/.dockerignore": b".git\n",
+        f"{root}/Dockerfile": b"FROM python:3.12-slim\n",
         f"{root}/LICENSE": b"MIT\n",
         f"{root}/README.md": b"# Jev Compiler\n",
+        f"{root}/compose.yaml": b"services: {}\n",
         f"{root}/pyproject.toml": b"[project]\nname = 'jevcompiler'\n",
         f"{root}/src/jevcompiler/freeze/runtime.ts": b"export {};\n",
         f"{root}/src/jevcompiler/py.typed": b"",
@@ -57,7 +60,7 @@ def test_distribution_verifier_accepts_release_archives(tmp_path) -> None:
     assert wheel.suffix == ".whl"
     assert wheel_count == 4
     assert sdist.name.endswith(".tar.gz")
-    assert sdist_count == 5
+    assert sdist_count == 8
 
 
 def test_distribution_verifier_rejects_private_files(tmp_path) -> None:

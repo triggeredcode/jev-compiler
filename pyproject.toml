@@ -57,13 +57,16 @@ packages = ["src/jevcompiler"]
 
 [tool.hatch.build.targets.sdist]
 include = [
+  "/.dockerignore",
   "/CHANGELOG.md",
   "/CODE_OF_CONDUCT.md",
   "/CONTRIBUTING.md",
+  "/Dockerfile",
   "/LICENSE",
   "/README.md",
   "/SECURITY.md",
   "/SUPPORT.md",
+  "/compose.yaml",
   "/docs",
   "/examples",
   "/pyproject.toml",

@@ -104,8 +104,11 @@ def _verify_sdist(path: Path) -> int:
     _require(
         names,
         {
+            f"{root}/.dockerignore",
+            f"{root}/Dockerfile",
             f"{root}/LICENSE",
             f"{root}/README.md",
+            f"{root}/compose.yaml",
             f"{root}/pyproject.toml",
             f"{root}/src/jevcompiler/freeze/runtime.ts",
             f"{root}/src/jevcompiler/py.typed",

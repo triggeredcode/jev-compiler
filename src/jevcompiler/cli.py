@@ -17,6 +17,7 @@ from jevcompiler.cli_baseline import app as baseline_app
 from jevcompiler.cli_build import build_project
 from jevcompiler.cli_dataset import app as dataset_app
 from jevcompiler.cli_optimize import app as optimize_app
+from jevcompiler.cli_showcase import showcase
 from jevcompiler.providers.base import SystemOneResult
 from jevcompiler.providers.discovery import discover_teacher_providers, select_teacher
 from jevcompiler.providers.fake import RecordedSystemOneProvider
@@ -32,6 +33,7 @@ app.add_typer(baseline_app, name="baseline", help="Compile and evaluate baseline
 app.add_typer(optimize_app, name="optimize", help="Optimize programs with cached evidence.")
 app.command("build")(build_project)
 app.command("report")(open_artifact_report)
+app.command("showcase")(showcase)
 console = Console()
 
 

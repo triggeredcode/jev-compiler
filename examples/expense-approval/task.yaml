@@ -1,0 +1,26 @@
+version: 1
+name: expense-approval
+description: Decide whether an employee expense can be reimbursed automatically.
+state:
+  description: An expense claim with amount, category, receipt, business purpose, and policy flags.
+actions:
+  - approve
+  - reject
+  - manual_review
+policy:
+  - Claims with a valid receipt, a clear business purpose, and low policy risk may be approved.
+  - Prohibited categories or strongly indicated policy violations must be rejected.
+  - Missing evidence, ambiguous policy fit, and high-value claims require manual review.
+objectives:
+  primary: teacher_agreement
+  secondary:
+    - minimize_cost
+    - minimize_latency
+    - minimize_graph_complexity
+constraints:
+  max_jev_calls: 1
+  max_questions: 3
+  allow_fallback: true
+teacher:
+  provider: auto
+  allow_paid: false

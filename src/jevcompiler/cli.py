@@ -5,6 +5,7 @@ import json
 from enum import StrEnum
 from pathlib import Path
 from typing import Annotated
+from urllib.parse import urlsplit, urlunsplit
 
 import typer
 from pydantic import ValidationError
@@ -19,10 +20,15 @@ from jevcompiler.cli_dataset import app as dataset_app
 from jevcompiler.cli_optimize import app as optimize_app
 from jevcompiler.cli_showcase import showcase
 from jevcompiler.providers.base import SystemOneResult
-from jevcompiler.providers.discovery import discover_teacher_providers, select_teacher
+from jevcompiler.providers.discovery import (
+    ProviderAvailability,
+    discover_teacher_providers,
+    select_teacher,
+)
 from jevcompiler.providers.fake import RecordedSystemOneProvider
 from jevcompiler.providers.typesafe import TypeSafeError, TypeSafeProvider
 from jevcompiler.runtime import ProgramRuntime
+from jevcompiler.security import redact
 from jevcompiler.specs import load_program, load_task
 from jevcompiler.specs.common import SpecLoadError
 
@@ -107,21 +113,69 @@ def doctor(
     paid_model: Annotated[
         str | None, typer.Option(help="Paid OpenRouter model; requires --allow-paid.")
     ] = None,
+    json_output: Annotated[
+        bool, typer.Option("--json", help="Emit one machine-readable JSON object.")
+    ] = False,
 ) -> None:
     """Probe local/free teacher availability without making generation requests."""
     availability = asyncio.run(discover_teacher_providers())
-    table = Table("Provider", "Available", "Models / reason")
-    for item in availability:
-        detail = ", ".join(item.models) or item.reason or "configured"
-        table.add_row(item.provider, "yes" if item.available else "no", detail)
-    console.print(table)
+    selected: dict[str, object] | None = None
+    selection_error: str | None = None
     try:
         provider, model = select_teacher(
             availability, allow_paid=allow_paid, paid_model=paid_model
         )
-        console.print(f"Selected teacher: [green]{provider}[/green] {model or '(default model)'}")
+        selected = {"provider": provider, "model": redact(model)}
     except RuntimeError as exc:
-        console.print(f"[yellow]{exc}[/yellow]")
+        selection_error = str(redact(str(exc)))
+
+    if json_output:
+        payload = {
+            "schema_version": 1,
+            "providers": [_doctor_provider_payload(item) for item in availability],
+            "selected": selected,
+            "selection_error": selection_error,
+        }
+        typer.echo(json.dumps(payload, sort_keys=True, separators=(",", ":")))
+        return
+
+    table = Table("Provider", "Available", "Models / reason")
+    for item in availability:
+        detail = ", ".join(item.models) or item.reason or "configured"
+        table.add_row(item.provider, "yes" if item.available else "no", str(redact(detail)))
+    console.print(table)
+    if selected is not None:
+        console.print(
+            "Selected teacher: "
+            f"[green]{selected['provider']}[/green] {selected['model'] or '(default model)'}"
+        )
+    else:
+        console.print(f"[yellow]{selection_error}[/yellow]")
+
+
+def _doctor_provider_payload(item: ProviderAvailability) -> dict[str, object]:
+    return {
+        "provider": item.provider,
+        "available": item.available,
+        "endpoint": _redact_endpoint(item.endpoint),
+        "models": [redact(model) for model in item.models],
+        "reason": redact(item.reason),
+    }
+
+
+def _redact_endpoint(endpoint: str | None) -> str | None:
+    if endpoint is None:
+        return None
+    parsed = urlsplit(endpoint)
+    if not parsed.scheme or parsed.hostname is None:
+        return str(redact(endpoint))
+    hostname = f"[{parsed.hostname}]" if ":" in parsed.hostname else parsed.hostname
+    port = f":{parsed.port}" if parsed.port is not None else ""
+    userinfo = "[REDACTED]@" if parsed.username is not None or parsed.password is not None else ""
+    safe_url = urlunsplit(
+        (parsed.scheme, f"{userinfo}{hostname}{port}", parsed.path, "", "")
+    )
+    return str(redact(safe_url))
 
 
 if __name__ == "__main__":

@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Add hardened Docker and Compose workflows for offline and local-model execution.
+- Add machine-readable, credential-safe JSON output to `jevcompiler doctor`.
 - Redesign the repository landing page with responsive, repository-owned SVG assets.
 - Retry bounded, explicitly transient TypeSafe HTTP responses while failing closed on ambiguous
   transport errors and ordinary client errors.

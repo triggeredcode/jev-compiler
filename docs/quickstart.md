@@ -48,6 +48,16 @@ The recorded answers keep this path deterministic and offline.
 uv run jevcompiler doctor
 ```
 
+For scripts, support bundles, and automated setup checks, request one JSON object instead of the
+interactive table:
+
+```bash
+uv run jevcompiler doctor --json
+```
+
+The versioned JSON payload includes every checked provider, its availability, endpoint, discovered
+models, redacted failure reason, and the selected teacher when one is available.
+
 The compiler selects teachers in this order:
 
 1. Ollama at `127.0.0.1:11434`

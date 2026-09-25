@@ -47,6 +47,10 @@ def test_dataset_build_help_exposes_paid_guard() -> None:
     assert "--allow-paid" in _help("dataset", "build")
 
 
+def test_doctor_help_exposes_json_output() -> None:
+    assert "--json" in _help("doctor")
+
+
 def test_dataset_adapt_help_requires_failure_evidence_and_paid_guard() -> None:
     output = _help("dataset", "adapt")
 

@@ -71,12 +71,14 @@ docker compose run --rm -e TYPESAFE_API_KEY compiler run \
   examples/support-routing/program.yaml \
   examples/support-routing/state.json
 
-docker compose run --rm -e OPENROUTER_API_KEY compiler build \
+docker compose run --rm -e TYPESAFE_API_KEY compiler build \
   examples/support-routing/task.yaml --budget quick
 ```
 
 With `-e NAME` and no value, Docker forwards that variable from the current shell. Paid OpenRouter
-models still require the CLI's explicit model selection and `--allow-paid` guard.
+models still require the CLI's explicit model selection and `--allow-paid` guard. When OpenRouter is
+the teacher, pass both `-e TYPESAFE_API_KEY` and `-e OPENROUTER_API_KEY`; Ollama and LM Studio need no
+teacher credential, but the first full build still needs TypeSafe for live Jev evaluation.
 
 ## Direct image usage
 

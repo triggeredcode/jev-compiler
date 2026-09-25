@@ -72,9 +72,17 @@ The compiler selects teachers in this order:
 The doctor command reports availability without printing credentials. A non-free OpenRouter model
 requires both an explicit model override and `--allow-paid`; it is never selected automatically.
 
+The teacher is only one side of a build. Ollama and LM Studio can generate the dataset and baseline
+locally, but evaluating that Jev program against new examples calls TypeSafe. `doctor` checks teacher
+availability; it does not validate `TYPESAFE_API_KEY`.
+
 ## 4. Build an optimized artifact
 
+A first full build performs live Jev evaluation. Get an API key from the
+[TypeSafe dashboard](https://console.typesafe.ai/) and export it before building:
+
 ```bash
+export TYPESAFE_API_KEY="..."
 uv run jevcompiler build examples/support-routing/task.yaml --budget quick
 ```
 
@@ -85,6 +93,9 @@ still match.
 Use `--budget standard` for semantic rewrites and a broader search or `--budget deep` for the largest
 built-in evidence and search budget. Add `--adaptive-cases 4` for one bounded failure-directed
 improvement round.
+
+The teacher still follows the local-first order above. No teacher key is needed when Ollama or LM
+Studio is selected. If OpenRouter supplies the teacher, also export `OPENROUTER_API_KEY`.
 
 ## 5. Inspect and verify output
 
@@ -98,9 +109,13 @@ uv run jevcompiler report \
 Verification checks the manifest and every recorded digest. The report is a self-contained HTML file
 with baseline/final metrics, generation history, Pareto trade-offs, lineage, and failure evidence.
 
-## Live TypeSafe execution
+## Credential-free replay and live TypeSafe execution
 
-The offline commands above do not need a key. To replace recorded answers with a live Jev call:
+The showcase, recorded-answer examples, artifact inspection, and verification do not need a key.
+Optimization can also run without network access when all required Jev responses are already cached
+and `--cache-mode replay_only` is selected. This is replay, not a first-time live build.
+
+To replace recorded answers with a live Jev call:
 
 1. Sign in to the [TypeSafe dashboard](https://console.typesafe.ai/) and get an API key.
 2. Export that key as `TYPESAFE_API_KEY`.

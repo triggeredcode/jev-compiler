@@ -105,16 +105,26 @@ service, or model-training/distillation system.
 
 ## Quickstart
 
-### Do I need an API key?
+### Which API keys do I need?
 
-Not for the offline showcase, recorded replay, artifact inspection, or verification. Those paths run
-without credentials or network access.
+Jev Compiler does not train model weights. A build uses two distinct model roles: a **teacher**
+creates examples and proposes programs, while **TypeSafe Jev** executes those programs so the
+compiler can measure and improve them.
 
-A key is required only when Jev Compiler makes a live call to Jev. There is no separate Jev Compiler
-key: use a **TypeSafe API key** from the [TypeSafe dashboard](https://console.typesafe.ai/), expose it
-to the process as `TYPESAFE_API_KEY`, and keep it out of tracked files. The
-[official TypeSafe quickstart](https://docs.typesafe.ai/introduction/quickstart) explains the same
-setup for direct API and SDK use.
+| Workflow | Credentials |
+| --- | --- |
+| Showcase, recorded-answer run, cache replay, artifact inspection, or verification | None |
+| Dataset generation or baseline compilation with Ollama/LM Studio | None for the local teacher |
+| First full build, evaluation, or optimization using live Jev results | `TYPESAFE_API_KEY` |
+| OpenRouter used as the teacher | `OPENROUTER_API_KEY`, plus `TYPESAFE_API_KEY` for live Jev evaluation |
+| Live execution on a new input | `TYPESAFE_API_KEY` |
+
+So **local-first** means the teacher, optimizer, storage, and reports can stay local; Jev remains the
+execution target. A first full build still needs a TypeSafe API key unless every required Jev response
+has already been recorded and the command is running in replay-only mode. Get the key from the
+[TypeSafe dashboard](https://console.typesafe.ai/), expose it as `TYPESAFE_API_KEY`, and keep it out
+of tracked files. See the [official TypeSafe quickstart](https://docs.typesafe.ai/introduction/quickstart)
+for direct API and SDK setup.
 
 Run the complete showcase without credentials or network access:
 

@@ -1,0 +1,40 @@
+version: 1
+name: expense-approval
+actions:
+  - approve
+  - reject
+  - manual_review
+entrypoint: assess
+jev_model: jev-latest
+stages:
+  - id: assess
+    type: jev
+    questions:
+      policy_fit:
+        type: choice
+        instructions: How does this expense claim fit the reimbursement policy?
+        criteria:
+          approve: The claim is ordinary, documented, and clearly business-related.
+          review: The claim is ambiguous, high-value, or missing supporting evidence.
+          reject: The claim is prohibited or has a strong policy violation.
+      risk_score:
+        type: score
+        instructions: Score the policy risk from 0 for negligible risk to 10 for clear abuse.
+        criteria:
+          - 0 to 3 means low risk with consistent evidence.
+          - 4 to 7 means material ambiguity requiring review.
+          - 8 to 10 means a strong policy violation or likely abuse.
+      receipt_valid:
+        type: noul
+        instructions: Does the claim include a valid receipt that matches the amount and merchant?
+    next: decide
+  - id: decide
+    type: branch
+    rules:
+      - when: policy_fit.choice == "reject" and policy_fit.confidence >= 0.8
+        return: reject
+      - when: risk_score.score >= 8 and risk_score.confidence >= 0.7
+        return: reject
+      - when: policy_fit.choice == "approve" and policy_fit.confidence >= 0.7 and risk_score.score <= 3 and receipt_valid >= 0.9
+        return: approve
+    default: manual_review

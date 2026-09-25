@@ -10,12 +10,14 @@ import pytest
 from jevcompiler.providers.base import SystemOneResult
 from jevcompiler.providers.fake import RecordedSystemOneProvider
 from jevcompiler.runtime import ProgramRuntime
+from jevcompiler.showcase import run_showcase
 from jevcompiler.specs.program import DecisionProgram
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "tests" / "fixtures" / "runtime_parity.json"
 RUNNER = ROOT / "tests" / "typescript" / "run-runtime-parity.mjs"
 FROZEN_RUNNER = ROOT / "tests" / "typescript" / "run-frozen-runtime.mjs"
+FROZEN_CONSUMER = ROOT / "examples" / "frozen-consumer" / "consumer.ts"
 TYPESCRIPT_RUNTIME = ROOT / "src" / "jevcompiler" / "freeze" / "runtime.ts"
 
 
@@ -114,3 +116,29 @@ def test_typescript_decide_loads_adjacent_frozen_program(tmp_path: Path) -> None
     )
 
     assert json.loads(completed.stdout) == {"action": "accept", "variables": {}}
+
+
+def test_offline_frozen_consumer_example(tmp_path: Path) -> None:
+    node = _node_22()
+    artifact = tmp_path / "artifact"
+    asyncio.run(run_showcase(ROOT / "examples" / "expense-approval", output=artifact))
+
+    completed = subprocess.run(
+        [
+            node,
+            "--no-warnings",
+            "--experimental-strip-types",
+            str(FROZEN_CONSUMER),
+            str(artifact),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+        cwd=ROOT,
+    )
+
+    assert json.loads(completed.stdout) == {
+        "action": "approve",
+        "model": "recorded-jev-expense-v1",
+        "stages": ["assess", "decide"],
+    }

@@ -1,0 +1,14 @@
+{
+  "employee_role": "software_engineer",
+  "amount": 68.0,
+  "currency": "USD",
+  "category": "coworking_day_pass",
+  "merchant": "Central Work Hub",
+  "business_purpose": "Workspace during an approved customer-site trip",
+  "receipt": {
+    "present": true,
+    "amount": 68.0,
+    "merchant": "Central Work Hub"
+  },
+  "policy_flags": []
+}

@@ -30,6 +30,10 @@ deployment artifact, and verifies its file digests. It makes no network calls an
 The default output is `.jevcompiler/artifacts/expense-approval/showcase/`. Frozen destinations are
 immutable; use `--output <path>` when you need a fresh destination.
 
+To see how an application loads that output without importing compiler source code, run the
+[offline frozen-artifact consumer](../examples/frozen-consumer/README.md). It uses the generated
+TypeScript runtime, a recorded provider callback, and no credentials or network access.
+
 ## 2. Validate and run a program
 
 ```bash

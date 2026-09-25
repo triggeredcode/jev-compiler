@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Add hardened Docker and Compose workflows for offline and local-model execution.
+- Redesign the repository landing page with responsive, repository-owned SVG assets.
+- Retry bounded, explicitly transient TypeSafe HTTP responses while failing closed on ambiguous
+  transport errors and ordinary client errors.
+
 ## 0.1.0 - 2026-09-25
 
 - Add the typed TaskSpec and restricted DecisionProgram schemas.

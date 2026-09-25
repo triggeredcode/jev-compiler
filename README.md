@@ -5,9 +5,9 @@
 <h1 align="center">Jev Compiler</h1>
 
 <p align="center">
-  <strong>Compile decision policies into inspectable, measurable TypeSafe Jev programs.</strong>
+  <strong>Turn written decision rules into small programs you can test, inspect, and run anywhere.</strong>
   <br>
-  Generate evidence, optimize a typed decision graph, and ship a verified artifact—not a hidden prompt.
+  Describe the decision. Give a few examples. Let Jev Compiler build the workflow and show its work.
 </p>
 
 <p align="center">
@@ -20,6 +20,7 @@
 
 <p align="center">
   <a href="#quickstart">Quickstart</a> ·
+  <a href="#what-is-jev">What is Jev?</a> ·
   <a href="#how-it-works">How it works</a> ·
   <a href="#local-first-model-routing">Model routing</a> ·
   <a href="#container-quickstart">Containers</a> ·
@@ -32,32 +33,75 @@
 </p>
 
 <p align="center">
-  <sub>Local-first compilation · bounded evaluation · deterministic replay · Python and TypeScript runtimes</sub>
+  <sub>From a policy people can read to a decision program software can trust</sub>
 </p>
 
-## Built for decisions that must be understood
+## Start with the decision, not the machinery
+
+Most teams already know how a decision should be made. It may be written in a handbook, scattered
+through support notes, encoded in a long prompt, or simply carried around in someone's head. Jev
+Compiler turns that knowledge into an explicit workflow.
+
+You describe the situation, the allowed outcomes, and examples of good decisions. The compiler then
+builds a small program, tries it against those examples, improves weak spots, and packages the result.
+You can read every question and rule, see why a case took a particular path, and run the finished
+program without the model that helped build it.
+
+For example, a support team can say:
+
+> Route billing questions to billing, technical problems to support, and uncertain or urgent cases
+> to a person.
+
+Jev Compiler can turn that sentence and a set of example tickets into a workflow that asks focused
+questions, applies the team's rules, chooses an action, and leaves a trace that explains the result.
+The same pattern works for expense approvals, security triage, document review, lead routing, agent
+quality checks, and other decisions that sit between rigid `if` statements and an opaque prompt.
+
+## What you get
 
 <table>
   <tr>
     <td width="33%" valign="top">
-      <h3>Inspect the program</h3>
-      Questions, thresholds, branches, actions, and model selection live in a typed YAML/JSON graph—not an opaque prompt.
+      <h3>Logic you can read</h3>
+      The questions, rules, thresholds, and outcomes stay visible instead of disappearing inside a prompt.
     </td>
     <td width="33%" valign="top">
-      <h3>Measure the trade-offs</h3>
-      Deterministic splits, failure evidence, counterfactual pairs, lineage, and Pareto selection make changes measurable.
+      <h3>Changes you can test</h3>
+      Compare versions on examples and difficult cases before changing how real decisions are made.
     </td>
     <td width="33%" valign="top">
-      <h3>Ship with proof</h3>
-      Frozen artifacts bind the exact program, held-out metrics, portable runtimes, provenance, and file digests.
+      <h3>A result you can ship</h3>
+      Freeze the chosen workflow with its test results, history, and ready-to-run Python and TypeScript runtimes.
     </td>
   </tr>
 </table>
 
-Jev questions produce bounded values—`Choice`, `Score`, and `Noul`. Jev Compiler turns those values
-into an explicit decision program that can be reviewed, tested, optimized, replayed, and deployed.
-It is a compiler for decision workflows, not a general agent harness, hosted service, or
-model-training/distillation system.
+## What is Jev?
+
+[Jev](https://docs.typesafe.ai/introduction) is TypeSafe AI's first System One model. Instead of
+writing a paragraph for a person to read, it answers focused questions in shapes that software can
+use directly: choose one option, score something on a scale, or estimate whether a statement is true.
+It also returns probabilities, so a workflow can act when the answer is clear and ask for human review
+when it is not.
+
+Jev Compiler is the layer around those judgments. It helps turn a larger policy into focused
+questions plus ordinary rules, tests the complete workflow, and produces a portable decision program.
+Jev is used for the uncertain parts; code remains in control of the final behavior.
+
+### Learn the ideas behind the project
+
+| Resource | Why it is useful |
+| --- | --- |
+| [TypeSafe AI](https://typesafe.ai/) | The company and the broader idea of machine-native decision models |
+| [Introducing System One Models & Jev](https://typesafe.ai/blog/introducing-system-one-models-and-jev) | The plain-language announcement, motivation, demonstrations, and technical results |
+| [Jev introduction](https://docs.typesafe.ai/introduction) | The shortest official explanation of state, typed questions, answers, and confidence |
+| [Choice, Score, and Noul](https://docs.typesafe.ai/primitives) | The three focused question types used to build workflows |
+| [TypeSafe cookbooks](https://docs.typesafe.ai/cookbooks) | Practical examples and patterns for real applications |
+| [Available models](https://docs.typesafe.ai/models) | Current Jev model options and their intended use |
+| [Workflow evaluations](https://evals.typesafe.ai/) | Interactive examples showing policies decomposed into questions and code |
+
+Jev Compiler is an independent open-source project. It is not a general agent harness, hosted
+service, or model-training/distillation system.
 
 ## Quickstart
 

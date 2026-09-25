@@ -1,158 +1,157 @@
 # Jev Compiler
 
-Jev Compiler turns a natural-language decision policy into an inspectable program made from
-TypeSafe Jev questions, probabilities, thresholds, and deterministic branches.
+[![CI](https://github.com/triggeredcode/jev-compiler/actions/workflows/ci.yml/badge.svg)](https://github.com/triggeredcode/jev-compiler/actions/workflows/ci.yml)
+[![Latest release](https://img.shields.io/github/v/release/triggeredcode/jev-compiler?display_name=tag&sort=semver)](https://github.com/triggeredcode/jev-compiler/releases/latest)
+[![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-22C55E.svg)](LICENSE)
 
-The project is an **automatic compiler for Jev decision workflows**. It is not an agent harness,
-a generic prompt optimizer, a hosted service, or a model-training/distillation system.
+**Compile natural-language decision policies into inspectable, measurable TypeSafe Jev programs.**
 
-> Status: the foundation, typed DSL, safe runtime, TypeSafe boundary, structured teacher layer,
-> provenance-aware dataset synthesis, constrained baseline compiler/evaluator, and the measurable
-> optimization core are implemented. Failure-directed training evidence and paired counterfactual
-> stability are included. Semantics-preserving input variations measure whether rephrasing changes
-> a program's decision. The compiler produces verified, immutable deployment artifacts with Python
-> and TypeScript runtimes plus a self-contained inspection report.
+Jev Compiler turns a decision requirement into a typed graph of Jev questions, probabilities,
+thresholds, and deterministic branches. It generates evidence, evaluates alternatives, and freezes
+the selected program as a verified deployment artifact with Python and TypeScript runtimes.
 
-## Why this shape
+![Jev Compiler pipeline](https://raw.githubusercontent.com/triggeredcode/jev-compiler/main/docs/assets/overview.svg)
 
-TypeSafe questions return bounded, typed values: Choice, Score, and Noul. Questions that share a
-state should normally be batched into one request and combined in deterministic code. Jev Compiler
-makes that surrounding program explicit, testable, and optimizable.
+> **Project status:** `v0.1` is an alpha release for evaluation and development. The typed DSL, safe
+> runtime, TypeSafe boundary, local-first teacher layer, dataset synthesis, constrained optimizer,
+> held-out evaluation, and immutable artifact pipeline are implemented and tested.
 
-```text
-decision requirement -> teacher-generated cases -> Jev graph -> evaluate -> optimize -> freeze
-```
+## Why Jev Compiler?
 
-The production artifact does not need its development-time teacher model.
+TypeSafe questions return bounded values—`Choice`, `Score`, and `Noul`. Jev Compiler makes the
+program around those questions explicit instead of hiding decision logic in one large prompt.
 
-Each frozen artifact contains `program.yaml`, a matching `program.json`, `runtime.py`, and a
-dependency-free `runtime.ts`. The TypeScript export exposes `runProgram(program, state, provider)`
-and `decide(state, provider)`; `decide` loads the adjacent `program.json`. Its provider implements
-one asynchronous `evaluate(state, questions, { model })` method. Node.js 22 can execute the export
-directly with type stripping, and ordinary TypeScript toolchains can compile it for other runtimes.
+| Capability | What it provides |
+| --- | --- |
+| Inspectable programs | Typed questions, thresholds, branches, actions, and model selection in YAML/JSON |
+| Evidence-driven optimization | Deterministic splits, failure corpora, counterfactual pairs, lineage, and Pareto selection |
+| Safe execution | Schema validation and an allowlisted expression interpreter; no Python `eval` or arbitrary code |
+| Cost-safe model routing | Ollama, then LM Studio, then OpenRouter's free router; paid models require explicit opt-in |
+| Portable deployment | Immutable artifact containing the program, manifest, report, and Python/TypeScript runtimes |
+| Reproducible verification | Content digests, replay-only caches, held-out evidence binding, and artifact verification |
 
-## Quick start
+Jev Compiler is not a general agent harness, hosted service, or model-training/distillation system.
+Its production artifact does not need the development-time teacher model.
+
+## Try it offline in 60 seconds
+
+Prerequisites: Python 3.11+, [uv](https://docs.astral.sh/uv/), and Node.js 22 for the TypeScript
+runtime parity checks.
 
 ```bash
+git clone https://github.com/triggeredcode/jev-compiler.git
+cd jev-compiler
 uv sync --extra dev
 uv run jevcompiler showcase
+```
+
+The showcase uses committed expense-approval fixtures, performs no network calls, evaluates the
+expected decision, freezes a deployment artifact, and verifies every file digest. Its output is
+written to `.jevcompiler/artifacts/expense-approval/showcase/` and is intentionally ignored by Git.
+
+```text
+policy + recorded Jev answers
+        -> typed decision graph
+        -> deterministic evaluation
+        -> frozen artifact
+        -> digest verification
+```
+
+See the [quickstart](docs/quickstart.md) for validation, live TypeSafe execution, local model setup,
+full builds, replay mode, and artifact inspection.
+
+## Core workflow
+
+```bash
+# Validate public examples.
 uv run jevcompiler validate examples/support-routing/task.yaml --kind task
 uv run jevcompiler validate examples/support-routing/program.yaml --kind program
+
+# Run deterministically with recorded TypeSafe answers.
 uv run jevcompiler run examples/support-routing/program.yaml \
   examples/support-routing/state.json \
   --answers examples/support-routing/answers.json
+
+# Generate data, compile, optimize, evaluate, and freeze.
 uv run jevcompiler build examples/support-routing/task.yaml --budget quick
-uv run jevcompiler build examples/support-routing/task.yaml \
-  --budget standard --adaptive-cases 4
+
+# Verify and inspect the selected frozen artifact.
 uv run jevcompiler artifact verify \
   .jevcompiler/artifacts/support-router/frozen/<candidate-id>
 uv run jevcompiler report \
   .jevcompiler/artifacts/support-router/frozen/<candidate-id>
-uv run pytest
 ```
 
-`showcase` is the credential-free end-to-end path. It loads the committed expense-approval task,
-program, state, and recorded Jev answers; evaluates the expected decision; freezes a deployment
-artifact; and verifies every artifact hash. It performs no network requests and records
-`live_calls: 0`. By default, output is written under
-`.jevcompiler/artifacts/expense-approval/showcase/`; use `--output <path>` to choose a fresh
-destination. Frozen destinations are immutable and are never overwritten.
+Build presets enforce hard ceilings on measured candidates and uncached TypeSafe requests:
 
-`build` runs dataset generation, baseline compilation, optimization, and artifact freezing in
-dependency order. It validates compatible phase outputs before resuming. Use `--budget quick` for a
-small structural search, `standard` for semantic rewrites and a broader search, or `deep` for the
-largest built-in evidence and search budget. Every preset enforces hard ceilings for measured
-candidates and uncached TypeSafe requests. Standard and deep builds add semantics-preserving
-parent/variant pairs; resume rejects an older dataset when that evidence budget does not match.
+- `quick` runs a small structural search.
+- `standard` adds semantic rewrites and broader evidence.
+- `deep` uses the largest built-in evidence and search budget.
 
-`--adaptive-cases N` adds one bounded improvement round after the initial optimization. The selected
-program is evaluated on training data, failures drive `N` new train-only cases, the baseline is
-recompiled, and selection is repeated against the unchanged development split before the unchanged
-test split is measured. Candidate and live-call ceilings are shared across both rounds. Validated
-adaptive outputs are resumed only when their source corpus, source candidate, requested case count,
-and resulting corpus hash still match.
+Add `--adaptive-cases N` for one bounded failure-directed improvement round. Development evidence
+selects the program; the unchanged test split measures it afterward. Resumed phases are accepted
+only when their source hashes and requested budgets still match.
 
-Each phase is also available independently:
+## Model routing and TypeSafe
 
-```bash
-uv run jevcompiler dataset build examples/support-routing/task.yaml \
-  --normal 8 --boundary 4 --semantic-variation 4
-uv run jevcompiler baseline build \
-  examples/support-routing/task.yaml \
-  .jevcompiler/artifacts/support-router/dataset
-uv run jevcompiler optimize run \
-  .jevcompiler/artifacts/support-router/baseline/program.yaml \
-  .jevcompiler/artifacts/support-router/dataset
-uv run jevcompiler artifact freeze \
-  .jevcompiler/artifacts/support-router/optimization/optimization.json \
-  .jevcompiler/artifacts/support-router/dataset
-```
+Automatic teacher selection is local-first:
 
-After an optimization run, generate new training evidence from its selected failure corpus:
+1. Ollama at `127.0.0.1:11434`
+2. LM Studio at `127.0.0.1:1234`
+3. OpenRouter's free router when `OPENROUTER_API_KEY` is present
+4. A paid OpenRouter model only with a non-free override and `--allow-paid`
 
-```bash
-uv run jevcompiler dataset adapt \
-  examples/support-routing/task.yaml \
-  .jevcompiler/artifacts/support-router/dataset \
-  .jevcompiler/artifacts/support-router/optimization/selected-failures/failures.json \
-  --output .jevcompiler/artifacts/support-router/adaptive-dataset
-```
+Run `uv run jevcompiler doctor` to inspect availability without printing secrets. Teacher selection
+and TypeSafe's Jev execution are separate boundaries: export `TYPESAFE_API_KEY` only when making a
+live Jev call, and omit `--answers`. Credentials are read from the process environment and must not
+be committed.
 
-Adaptive generation accepts failures from the training split only. Every new case cites its source
-failure, duplicate states are rejected, and the existing development and test splits remain
-unchanged. Use the resulting dataset in the next baseline and optimization cycle.
+For deterministic reruns, use `--cache-mode replay_only`. TypeSafe recordings, generated datasets,
+programs, metrics, lineage, and failure evidence stay under `.jevcompiler/`, outside version control.
 
-For a live Jev call, export `TYPESAFE_API_KEY` and omit `--answers`. Supply every credential through
-the process environment and never commit local key files or generated provider recordings.
+## Deployment artifact
 
-## Teacher selection policy
+Every frozen artifact is immutable and contains:
 
-Automatic selection is intentionally cost-safe:
+- `program.yaml` and equivalent `program.json`
+- a digest-bound `manifest.json`
+- dependency-free `runtime.py` and `runtime.ts`
+- held-out metrics and provenance
+- a self-contained HTML inspection report
 
-1. Ollama on `127.0.0.1:11434`
-2. LM Studio on `127.0.0.1:1234`
-3. OpenRouter's free router when `OPENROUTER_API_KEY` is configured
-4. A paid OpenRouter model only after explicit opt-in
+The TypeScript export exposes `runProgram(program, state, provider)` and `decide(state, provider)`.
+Its provider supplies one asynchronous `evaluate(state, questions, { model })` method. Node.js 22
+can execute the export directly with type stripping; regular TypeScript toolchains can compile it
+for other runtimes.
 
-Run `jevcompiler doctor` to see availability without printing secrets. The dataset and baseline
-commands use this order automatically. A paid model requires both a non-free model override and
-`--allow-paid`; it is never selected implicitly. Provider selection for the teacher and TypeSafe's
-Jev execution are separate concerns.
-
-All generated datasets, programs, metrics, lineage, and failure evidence live under
-`.jevcompiler/artifacts/<task>/`. TypeSafe recordings live under `.jevcompiler/cache/`, and the
-entire workspace is excluded from version control. Use `--cache-mode replay_only` for a fully
-offline rerun.
-
-Add `--semantic --task <task.yaml>` to request bounded question rewrites through the same local-first
-teacher policy. A rewrite cannot add actions or arbitrary code.
-
-Optimization uses the development split for selection, then measures the fixed baseline and selected
-program on the untouched test split. Frozen manifests bind those held-out results to the exact test
-cases by digest. The self-contained report shows baseline/final comparisons, accuracy by generation,
-paired counterfactual stability, semantic invariance under rephrasing, the Pareto trade-off,
-candidate lineage, and failure evidence.
+Read [Architecture](docs/architecture.md) for pipeline boundaries, trust assumptions, and the
+artifact contract.
 
 ## Repository map
 
-- `src/jevcompiler/specs`: canonical TaskSpec and restricted DecisionProgram DSL
-- `src/jevcompiler/runtime`: safe expression interpreter and graph execution
-- `src/jevcompiler/providers`: TypeSafe client and local-first structured teacher adapters
-- `src/jevcompiler/dataset`: provenance, labeling, validation, and deterministic splits
-- `src/jevcompiler/baseline`: constrained compilation and trace-rich evaluation
-- `src/jevcompiler/optimizer`: cache/replay, failure evidence, mutations, lineage, and Pareto search
-- `src/jevcompiler/freeze`: immutable artifacts, Python/TypeScript exports, verification, and reports
-- `src/jevcompiler/security.py`: log-safe secret redaction
-- `examples/support-routing`: runnable offline example
-- `examples/expense-approval`: credential-free replay and frozen-artifact showcase
+- `src/jevcompiler/specs` — canonical task and restricted decision-program schemas
+- `src/jevcompiler/runtime` — safe expression interpreter and graph execution
+- `src/jevcompiler/providers` — TypeSafe client and local-first structured teachers
+- `src/jevcompiler/dataset` — provenance, labeling, validation, and deterministic splits
+- `src/jevcompiler/baseline` — constrained compilation and trace-rich evaluation
+- `src/jevcompiler/optimizer` — replay cache, failures, mutations, lineage, and Pareto search
+- `src/jevcompiler/freeze` — artifacts, runtimes, verification, and reports
+- `examples/` — runnable support-routing and expense-approval examples
 
-## Security and terms
+## Development
 
-Candidate programs are declarative data. They cannot import modules, execute Python, access the
-filesystem, or make arbitrary network calls. The expression engine does not use `eval`.
+```bash
+uv sync --extra dev
+uv run ruff check .
+uv run pytest
+uv build
+uv run python scripts/verify_distribution.py dist
+```
 
-Jev Compiler optimizes application workflows. It does not train or distill a model from Jev
-outputs. Users remain responsible for complying with provider terms. See [SECURITY.md](SECURITY.md).
+Please read [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), and the
+[changelog](CHANGELOG.md) before contributing or deploying. This project is licensed under the
+[MIT License](LICENSE).
 
 ## References
 
@@ -160,5 +159,3 @@ outputs. Users remain responsible for complying with provider terms. See [SECURI
 - [TypeSafe primitives](https://docs.typesafe.ai/primitives)
 - [TypeSafe cookbooks](https://docs.typesafe.ai/cookbooks)
 - [TypeSafe models](https://docs.typesafe.ai/models)
-
-Licensed under the MIT License.

@@ -1,0 +1,5 @@
+* @triggeredcode
+
+/.github/ @triggeredcode
+/src/jevcompiler/security.py @triggeredcode
+/src/jevcompiler/runtime/ @triggeredcode

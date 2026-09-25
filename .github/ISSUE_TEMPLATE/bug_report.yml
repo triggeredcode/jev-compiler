@@ -1,0 +1,71 @@
+name: Bug report
+description: Report a reproducible defect in Jev Compiler.
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve Jev Compiler. Remove credentials, private policies, and provider responses before submitting.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Release tag or commit SHA where the problem occurs.
+      placeholder: v0.1.0 or abc1234
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - CLI or configuration
+        - Task/program schema
+        - Runtime evaluation
+        - TypeSafe provider
+        - Teacher discovery or generation
+        - Dataset or optimizer
+        - Frozen artifact or report
+        - Packaging or CI
+        - Documentation
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Describe the observed behavior and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Include the smallest safe command, fixture, or test that reproduces the issue.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include operating system, Python version, uv version, and Node.js version when relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Sanitized output
+      description: Paste relevant output after removing keys, tokens, private inputs, and provider responses.
+      render: text
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Submission checks
+      options:
+        - label: I reproduced this on the latest release or current `main`.
+          required: true
+        - label: I removed credentials and private data from this report.
+          required: true
+        - label: This is not a security vulnerability.
+          required: true

@@ -25,3 +25,20 @@ jobs:
       - run: uv sync --extra dev
       - run: uv run ruff check .
       - run: uv run pytest
+
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.13"
+      - run: uv build
+      - run: python scripts/verify_distribution.py dist
+      - run: uv venv .package-smoke
+      - run: uv pip install --python .package-smoke/bin/python dist/*.whl
+      - run: .package-smoke/bin/jevcompiler --help
+      - run: >-
+          .package-smoke/bin/python -c
+          "from importlib.resources import files;
+          assert files('jevcompiler.freeze').joinpath('runtime.ts').is_file()"

@@ -42,6 +42,11 @@ dev = [
 ]
 
 [project.urls]
+Homepage = "https://github.com/triggeredcode/jev-compiler"
+Repository = "https://github.com/triggeredcode/jev-compiler"
+Documentation = "https://github.com/triggeredcode/jev-compiler/tree/main/docs"
+Issues = "https://github.com/triggeredcode/jev-compiler/issues"
+Changelog = "https://github.com/triggeredcode/jev-compiler/blob/main/CHANGELOG.md"
 "TypeSafe API documentation" = "https://docs.typesafe.ai/introduction"
 
 [tool.hatch.version]
@@ -53,10 +58,13 @@ packages = ["src/jevcompiler"]
 [tool.hatch.build.targets.sdist]
 include = [
   "/CHANGELOG.md",
+  "/CODE_OF_CONDUCT.md",
   "/CONTRIBUTING.md",
   "/LICENSE",
   "/README.md",
   "/SECURITY.md",
+  "/SUPPORT.md",
+  "/docs",
   "/examples",
   "/pyproject.toml",
   "/scripts",

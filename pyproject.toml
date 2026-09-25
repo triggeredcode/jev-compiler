@@ -59,6 +59,7 @@ include = [
   "/SECURITY.md",
   "/examples",
   "/pyproject.toml",
+  "/scripts",
   "/src",
   "/tests",
   "/uv.lock",

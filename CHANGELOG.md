@@ -17,5 +17,6 @@
 - Add digest-bound held-out evaluation without allowing test evidence to affect selection.
 - Add hard live-call and candidate ceilings with recorded search termination reasons.
 - Add a dependency-free TypeScript artifact runtime with fixture parity against Python.
+- Add typed-package metadata and wheel/sdist leak, content, entry-point, and clean-install checks.
 - Add baseline/final, generation, Pareto, lineage, and failure views to static reports.
 - Add CLI validation, execution, provider diagnostics, examples, tests, and CI.

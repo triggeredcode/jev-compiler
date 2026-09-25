@@ -199,7 +199,7 @@ def test_report_command_verifies_artifact_without_opening_browser(tmp_path) -> N
     completed = CliRunner().invoke(app, ["report", str(root), "--no-open"])
 
     assert completed.exit_code == 0
-    assert "report.html" in completed.output
+    assert "report.html" in "".join(completed.output.splitlines())
     assert root.name in completed.output
 
 

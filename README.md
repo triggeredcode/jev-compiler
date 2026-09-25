@@ -262,7 +262,8 @@ queues, then claim one with a short comment.
 
 Jev Compiler builds on the [TypeSafe Jev model](https://docs.typesafe.ai/introduction), including its
 [primitives](https://docs.typesafe.ai/primitives), [cookbooks](https://docs.typesafe.ai/cookbooks),
-and [model catalog](https://docs.typesafe.ai/models).
+and [model catalog](https://docs.typesafe.ai/models). Jev Compiler is an independent open-source
+project focused on compiling decision policies into portable programs.
 
 <p align="center">
   Released under the <a href="LICENSE">MIT License</a>.
